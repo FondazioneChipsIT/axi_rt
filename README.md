@@ -122,20 +122,32 @@ transitive ones) are declared in `Bender.yml` and resolved with
 
 ## Register generation
 
-The control/status registers are described in `src/registers/axi_tmu_regs.hjson`.
-The generated files are committed:
+The control/status registers of each variant are described in
+`src/registers/axi_tmu_<variant>_regs.hjson`, with `<variant>` being `ilt`, `clt`
+or `plt`. Every name `regtool` generates (package, modules, types, C macros) is
+derived from the `name:` field of that file (`axi_tmu_<variant>`), not from its
+file name, so the two must agree: `make regen_regs` stops with an error otherwise.
+The generated files are committed, three per variant:
 
-- `src/registers/axi_tmu_reg_pkg.sv`
-- `src/registers/axi_tmu_reg_top.sv`
-- `sw/include/regs/axi_tmu_reg.h`
+- `src/registers/axi_tmu_<variant>_reg_pkg.sv`
+- `src/registers/axi_tmu_<variant>_reg_top.sv`
+- `sw/include/regs/axi_tmu_<variant>_reg.h`
 
-After editing the hjson file, regenerate and commit them:
+Because of the per-variant names the register blocks of the three variants can be
+compiled together without clashes. At the moment `Bender.yml` only lists the ILT
+register block; the CLT and PLT ones are generated but not part of the build yet.
+
+After editing an hjson file, regenerate and commit the results:
 
 ```bash
 source bootstrap.sh      # once per shell
-make regen_regs
-git status               # the three files above should show up as modified
+make regen_regs          # all variants; only those whose hjson changed are rebuilt
+git status               # the generated files of the edited variant show up as modified
 ```
+
+`make regen_regs TMU_VARIANTS=ilt` limits the run to the listed variants. To add a
+variant, create its `axi_tmu_<variant>_regs.hjson` and add its name to
+`TMU_VARIANTS` in `axi_tmu.mk`.
 
 `make regen_regs` finds `regtool.py` through `bender path register_interface` and
 starts it through its `#!/usr/bin/env python3` shebang, i.e. with the first

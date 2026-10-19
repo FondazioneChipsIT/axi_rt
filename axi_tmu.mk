@@ -81,17 +81,30 @@ tmu-sim:
 # Define the path to regtool.py
 REGTOOL ?= $(REG_DIR)/vendor/lowrisc_opentitan/util/regtool.py
 
-# Register generation targets
-REGEN_TARGETS := $(TMU_ROOT)/src/registers/axi_tmu_ilt_reg_pkg.sv \
-                 $(TMU_ROOT)/src/registers/axi_tmu_ilt_reg_top.sv \
-                 $(TMU_ROOT)/sw/include/regs/axi_tmu_ilt_reg.h
+# Register blocks, one per variant. Every variant needs
+# src/registers/axi_tmu_<variant>_regs.hjson whose `name:` field is axi_tmu_<variant>:
+# regtool derives the names of everything it generates (package, modules, types,
+# C macros) from that field. Restrict the list with e.g. `make regen_regs TMU_VARIANTS=ilt`.
+TMU_VARIANTS ?= ilt clt plt
+REG_SRC_DIR  := $(TMU_ROOT)/src/registers
+REG_SW_DIR   := $(TMU_ROOT)/sw/include/regs
 
-# Rule to generate .sv files
-$(TMU_ROOT)/src/registers/axi_tmu_ilt_reg_pkg.sv $(TMU_ROOT)/src/registers/axi_tmu_ilt_reg_top.sv: $(TMU_ROOT)/src/registers/axi_tmu_ilt_regs.hjson
-	$(REGTOOL) -r -t $(TMU_ROOT)/src/registers $<
+# Register generation targets
+REGEN_TARGETS := $(foreach v,$(TMU_VARIANTS), \
+                   $(REG_SRC_DIR)/axi_tmu_$(v)_reg_pkg.sv \
+                   $(REG_SRC_DIR)/axi_tmu_$(v)_reg_top.sv \
+                   $(REG_SW_DIR)/axi_tmu_$(v)_reg.h)
+
+# Rule to generate .sv files. A pattern rule with several targets is run once for
+# all of them, so regtool is not started twice. The check catches an hjson whose
+# `name:` does not match its file name (regtool would write differently named files).
+$(REG_SRC_DIR)/%_reg_pkg.sv $(REG_SRC_DIR)/%_reg_top.sv: $(REG_SRC_DIR)/%_regs.hjson
+	$(REGTOOL) -r -t $(REG_SRC_DIR) $<
+	@test -f $(REG_SRC_DIR)/$*_reg_pkg.sv && test -f $(REG_SRC_DIR)/$*_reg_top.sv || \
+	  { echo "error: $< must declare name: \"$*\" (regtool did not write $*_reg_pkg.sv / $*_reg_top.sv)"; exit 1; }
 
 # Rule to generate .h file
-$(TMU_ROOT)/sw/include/regs/axi_tmu_ilt_reg.h: $(TMU_ROOT)/src/registers/axi_tmu_ilt_regs.hjson
+$(REG_SW_DIR)/%_reg.h: $(REG_SRC_DIR)/%_regs.hjson
 	$(REGTOOL) -D -o $@ $<
 
 # Main target
