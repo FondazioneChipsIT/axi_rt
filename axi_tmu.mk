@@ -82,16 +82,16 @@ tmu-sim:
 REGTOOL ?= $(REG_DIR)/vendor/lowrisc_opentitan/util/regtool.py
 
 # Register generation targets
-REGEN_TARGETS := $(TMU_ROOT)/src/registers/axi_tmu_reg_pkg.sv \
-                 $(TMU_ROOT)/src/registers/axi_tmu_reg_top.sv \
-                 $(TMU_ROOT)/sw/include/regs/axi_tmu_reg.h
+REGEN_TARGETS := $(TMU_ROOT)/src/registers/axi_tmu_ilt_reg_pkg.sv \
+                 $(TMU_ROOT)/src/registers/axi_tmu_ilt_reg_top.sv \
+                 $(TMU_ROOT)/sw/include/regs/axi_tmu_ilt_reg.h
 
 # Rule to generate .sv files
-$(TMU_ROOT)/src/registers/axi_tmu_reg_pkg.sv $(TMU_ROOT)/src/registers/axi_tmu_reg_top.sv: $(TMU_ROOT)/src/registers/axi_tmu_regs.hjson
+$(TMU_ROOT)/src/registers/axi_tmu_ilt_reg_pkg.sv $(TMU_ROOT)/src/registers/axi_tmu_ilt_reg_top.sv: $(TMU_ROOT)/src/registers/axi_tmu_ilt_regs.hjson
 	$(REGTOOL) -r -t $(TMU_ROOT)/src/registers $<
 
 # Rule to generate .h file
-$(TMU_ROOT)/sw/include/regs/axi_tmu_reg.h: $(TMU_ROOT)/src/registers/axi_tmu_regs.hjson
+$(TMU_ROOT)/sw/include/regs/axi_tmu_ilt_reg.h: $(TMU_ROOT)/src/registers/axi_tmu_ilt_regs.hjson
 	$(REGTOOL) -D -o $@ $<
 
 # Main target

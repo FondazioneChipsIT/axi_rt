@@ -22,8 +22,8 @@ sources:
   - target: rtl
     files:
       # Level 0
-      - src/registers/axi_tmu_reg_pkg.sv
-      - src/registers/axi_tmu_reg_top.sv
+      - src/registers/axi_tmu_ilt_reg_pkg.sv
+      - src/registers/axi_tmu_ilt_reg_top.sv
       - src/axi_tmu_pkg.sv
       - src/timebase.sv
       - src/sticky.sv

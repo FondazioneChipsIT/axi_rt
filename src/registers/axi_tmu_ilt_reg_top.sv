@@ -7,7 +7,7 @@
 
 `include "common_cells/assertions.svh"
 
-module axi_tmu_reg_top #(
+module axi_tmu_ilt_reg_top #(
   parameter type reg_req_t = logic,
   parameter type reg_rsp_t = logic,
   parameter int AW = 5
@@ -17,15 +17,15 @@ module axi_tmu_reg_top #(
   input  reg_req_t reg_req_i,
   output reg_rsp_t reg_rsp_o,
   // To HW
-  output axi_tmu_reg_pkg::axi_tmu_reg2hw_t reg2hw, // Write
-  input  axi_tmu_reg_pkg::axi_tmu_hw2reg_t hw2reg, // Read
+  output axi_tmu_ilt_reg_pkg::axi_tmu_ilt_reg2hw_t reg2hw, // Write
+  input  axi_tmu_ilt_reg_pkg::axi_tmu_ilt_hw2reg_t hw2reg, // Read
 
 
   // Config
   input devmode_i // If 1, explicit error return for unmapped register access
 );
 
-  import axi_tmu_reg_pkg::* ;
+  import axi_tmu_ilt_reg_pkg::* ;
 
   localparam int DW = 32;
   localparam int DBW = DW/8;                    // Byte Width
@@ -333,11 +333,11 @@ module axi_tmu_reg_top #(
   logic [4:0] addr_hit;
   always_comb begin
     addr_hit = '0;
-    addr_hit[0] = (reg_addr == AXI_TMU_BUDGET_AVLD_ARDY_OFFSET);
-    addr_hit[1] = (reg_addr == AXI_TMU_BUDGET_B2B_OFFSET);
-    addr_hit[2] = (reg_addr == AXI_TMU_BUDGET_R2R_OFFSET);
-    addr_hit[3] = (reg_addr == AXI_TMU_RESET_OFFSET);
-    addr_hit[4] = (reg_addr == AXI_TMU_FAULT_LOG_OFFSET);
+    addr_hit[0] = (reg_addr == AXI_TMU_ILT_BUDGET_AVLD_ARDY_OFFSET);
+    addr_hit[1] = (reg_addr == AXI_TMU_ILT_BUDGET_B2B_OFFSET);
+    addr_hit[2] = (reg_addr == AXI_TMU_ILT_BUDGET_R2R_OFFSET);
+    addr_hit[3] = (reg_addr == AXI_TMU_ILT_RESET_OFFSET);
+    addr_hit[4] = (reg_addr == AXI_TMU_ILT_FAULT_LOG_OFFSET);
   end
 
   assign addrmiss = (reg_re || reg_we) ? ~|addr_hit : 1'b0 ;
@@ -345,11 +345,11 @@ module axi_tmu_reg_top #(
   // Check sub-word write is permitted
   always_comb begin
     wr_err = (reg_we &
-              ((addr_hit[0] & (|(AXI_TMU_PERMIT[0] & ~reg_be))) |
-               (addr_hit[1] & (|(AXI_TMU_PERMIT[1] & ~reg_be))) |
-               (addr_hit[2] & (|(AXI_TMU_PERMIT[2] & ~reg_be))) |
-               (addr_hit[3] & (|(AXI_TMU_PERMIT[3] & ~reg_be))) |
-               (addr_hit[4] & (|(AXI_TMU_PERMIT[4] & ~reg_be)))));
+              ((addr_hit[0] & (|(AXI_TMU_ILT_PERMIT[0] & ~reg_be))) |
+               (addr_hit[1] & (|(AXI_TMU_ILT_PERMIT[1] & ~reg_be))) |
+               (addr_hit[2] & (|(AXI_TMU_ILT_PERMIT[2] & ~reg_be))) |
+               (addr_hit[3] & (|(AXI_TMU_ILT_PERMIT[3] & ~reg_be))) |
+               (addr_hit[4] & (|(AXI_TMU_ILT_PERMIT[4] & ~reg_be)))));
   end
 
   assign budget_avld_ardy_we = addr_hit[0] & reg_we & !reg_error;
@@ -424,7 +424,7 @@ module axi_tmu_reg_top #(
 
 endmodule
 
-module axi_tmu_reg_top_intf
+module axi_tmu_ilt_reg_top_intf
 #(
   parameter int AW = 5,
   localparam int DW = 32
@@ -433,8 +433,8 @@ module axi_tmu_reg_top_intf
   input logic rst_ni,
   REG_BUS.in  regbus_slave,
   // To HW
-  output axi_tmu_reg_pkg::axi_tmu_reg2hw_t reg2hw, // Write
-  input  axi_tmu_reg_pkg::axi_tmu_hw2reg_t hw2reg, // Read
+  output axi_tmu_ilt_reg_pkg::axi_tmu_ilt_reg2hw_t reg2hw, // Write
+  input  axi_tmu_ilt_reg_pkg::axi_tmu_ilt_hw2reg_t hw2reg, // Read
   // Config
   input devmode_i // If 1, explicit error return for unmapped register access
 );
@@ -458,7 +458,7 @@ module axi_tmu_reg_top_intf
 
   
 
-  axi_tmu_reg_top #(
+  axi_tmu_ilt_reg_top #(
     .reg_req_t(reg_bus_req_t),
     .reg_rsp_t(reg_bus_rsp_t),
     .AW(AW)

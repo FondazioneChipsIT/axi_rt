@@ -58,10 +58,10 @@ module axi_tmu_top
   end
 
   // Register block
-  axi_tmu_reg_pkg::axi_tmu_reg2hw_t reg2hw;
-  axi_tmu_reg_pkg::axi_tmu_hw2reg_t hw2reg;
+  axi_tmu_ilt_reg_pkg::axi_tmu_ilt_reg2hw_t reg2hw;
+  axi_tmu_ilt_reg_pkg::axi_tmu_ilt_hw2reg_t hw2reg;
 
-  axi_tmu_reg_top #(
+  axi_tmu_ilt_reg_top #(
     .reg_req_t(cfg_req_t),
     .reg_rsp_t(cfg_rsp_t)
   ) i_regs (
