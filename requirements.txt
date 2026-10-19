@@ -8,7 +8,7 @@
 # version so that the environment is identical on every machine. The pins are
 # installable on Python 3.8 up to 3.12 (checked on 3.8, 3.11 and 3.12).
 
-# Reads the register description (`src/registers/axi_tmu_<variant>_regs.hjson`)
+# Reads the register description (`src/registers/regmap/axi_tmu_<variant>_regs.hjson`)
 hjson==3.1.0
 
 # Template engine that renders the generated RTL (`*_reg_pkg.sv`, `*_reg_top.sv`)

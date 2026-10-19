@@ -46,7 +46,9 @@ nothing if nothing changed.
 | `Bender.yml`, `Bender.lock`, `Bender.local` | Dependency manifest, pinned revisions, local version override. |
 | `Makefile` | Entry point of `make`. Defines `TMU_ROOT` (the repository root, i.e. the directory `make` is run from) and `BENDER` (`bender -d $(TMU_ROOT)`), includes `axi_tmu.mk`, and warns when `.venv` is not active (see [Register generation](#register-generation)). |
 | `axi_tmu.mk` | The actual make targets: `regen_regs`, `tmu-sim-init`, `tmu-build`, `tmu-sim`, `synth-ips`, `bender`. It expects `TMU_ROOT` and `BENDER` from the `Makefile`, so run `make` from the repository root. |
-| `src/` | RTL. `src/registers/` holds the hjson register description and the generated RTL. |
+| `src/rtl/` | RTL modules. |
+| `src/registers/` | Generated register RTL (`axi_tmu_<variant>_reg_pkg.sv`, `axi_tmu_<variant>_reg_top.sv`). |
+| `src/registers/regmap/` | Register descriptions in hjson (`axi_tmu_<variant>_regs.hjson`), the only files to edit by hand. |
 | `sw/include/regs/` | Generated C header of the registers. |
 | `target/sim/vsim/` | Questa scripts. |
 | `test/` | Testbench and stimuli. |
@@ -123,7 +125,7 @@ transitive ones) are declared in `Bender.yml` and resolved with
 ## Register generation
 
 The control/status registers of each variant are described in
-`src/registers/axi_tmu_<variant>_regs.hjson`, with `<variant>` being `ilt`, `clt`
+`src/registers/regmap/axi_tmu_<variant>_regs.hjson`, with `<variant>` being `ilt`, `clt`
 or `plt`. Every name `regtool` generates (package, modules, types, C macros) is
 derived from the `name:` field of that file (`axi_tmu_<variant>`), not from its
 file name, so the two must agree: `make regen_regs` stops with an error otherwise.
@@ -134,8 +136,7 @@ The generated files are committed, three per variant:
 - `sw/include/regs/axi_tmu_<variant>_reg.h`
 
 Because of the per-variant names the register blocks of the three variants can be
-compiled together without clashes. At the moment `Bender.yml` only lists the ILT
-register block; the CLT and PLT ones are generated but not part of the build yet.
+compiled together without clashes, and `Bender.yml` lists all of them.
 
 After editing an hjson file, regenerate and commit the results:
 
