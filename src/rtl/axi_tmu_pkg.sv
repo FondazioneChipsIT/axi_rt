@@ -73,6 +73,10 @@ package axi_tmu_pkg;
     TMU_DIR_WRITE = 2'd2
   } tmu_dir_t;
 
+  // Phase code carried by the top, independent of the selected implementation.
+  // The guards use tmu_phase_ilt_t / tmu_phase_clt_t; PH_*_NONE must be 0 in both.
+  typedef logic [2:0] tmu_phase_t;
+
   //******* ILT IMPLEMENTATION VARIABLES *******//
 
   typedef enum logic [2:0] {
