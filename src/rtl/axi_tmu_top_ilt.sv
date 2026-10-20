@@ -64,6 +64,13 @@ module axi_tmu_top_ilt
   track_cnt_t  budget_b2b;
   logic [11:0] budget_r2r;
 
+  // Fault log write path towards the register block (same for both modes)
+  logic        faultlog_we;
+  logic        faultlog_valid_d, faultlog_dir_d, reset_d;
+  logic [2:0]  faultlog_type_d;
+  logic [3:0]  faultlog_phase_d;
+  logic [15:0] faultlog_id_d;
+
   // Register block
   if (TmuMode == ILT_MODE) begin : gen_regs_ilt
     axi_tmu_ilt_reg_pkg::axi_tmu_ilt_reg2hw_t reg2hw;
@@ -88,6 +95,20 @@ module axi_tmu_top_ilt
     assign budget_w_liveness = '0;
     assign budget_r_liveness = '0;
     assign budget_b          = '0;
+
+    assign hw2reg.fault_log.fault_valid.de = faultlog_we;
+    assign hw2reg.fault_log.fault_type.de  = faultlog_we;
+    assign hw2reg.fault_log.fault_dir.de   = faultlog_we;
+    assign hw2reg.fault_log.fault_id.de    = faultlog_we;
+    assign hw2reg.fault_log.fault_phase.de = faultlog_we;
+    assign hw2reg.reset.de                 = faultlog_we;
+
+    assign hw2reg.fault_log.fault_valid.d  = faultlog_valid_d;
+    assign hw2reg.fault_log.fault_type.d   = faultlog_type_d;
+    assign hw2reg.fault_log.fault_dir.d    = faultlog_dir_d;
+    assign hw2reg.fault_log.fault_id.d     = faultlog_id_d;
+    assign hw2reg.fault_log.fault_phase.d  = faultlog_phase_d;
+    assign hw2reg.reset.d                  = reset_d;
   end else if (TmuMode == CLT_MODE) begin : gen_regs_clt
     axi_tmu_clt_reg_pkg::axi_tmu_clt_reg2hw_t reg2hw;
     axi_tmu_clt_reg_pkg::axi_tmu_clt_hw2reg_t hw2reg;
@@ -111,6 +132,20 @@ module axi_tmu_top_ilt
     assign budget_b          = (reg2hw.budget_b.q          == '0) ? '1 : hs_cnt_t'(reg2hw.budget_b.q);
     assign budget_b2b        = '0;
     assign budget_r2r        = '0;
+
+    assign hw2reg.fault_log.fault_valid.de = faultlog_we;
+    assign hw2reg.fault_log.fault_type.de  = faultlog_we;
+    assign hw2reg.fault_log.fault_dir.de   = faultlog_we;
+    assign hw2reg.fault_log.fault_id.de    = faultlog_we;
+    assign hw2reg.fault_log.fault_phase.de = faultlog_we;
+    assign hw2reg.reset.de                 = faultlog_we;
+
+    assign hw2reg.fault_log.fault_valid.d  = faultlog_valid_d;
+    assign hw2reg.fault_log.fault_type.d   = faultlog_type_d;
+    assign hw2reg.fault_log.fault_dir.d    = faultlog_dir_d;
+    assign hw2reg.fault_log.fault_id.d     = faultlog_id_d;
+    assign hw2reg.fault_log.fault_phase.d  = faultlog_phase_d;
+    assign hw2reg.reset.d                  = reset_d;
   end else begin : gen_regs_invalid
     $fatal(1, "axi_tmu_top: only ILT_MODE and CLT_MODE are implemented");
   end
@@ -384,7 +419,6 @@ module axi_tmu_top_ilt
     end
   end
 
-  logic faultlog_we;
   assign faultlog_we = (!fault_logged && (wr_fault_pulse || rd_fault_pulse)) ||
                        (wr_evt_ovf || rd_evt_ovf);
 
@@ -409,28 +443,21 @@ module axi_tmu_top_ilt
     end
   end
 
-  assign hw2reg.fault_log.fault_valid.de = faultlog_we;
-  assign hw2reg.fault_log.fault_type.de  = faultlog_we;
-  assign hw2reg.fault_log.fault_dir.de   = faultlog_we;
-  assign hw2reg.fault_log.fault_id.de    = faultlog_we;
-  assign hw2reg.fault_log.fault_phase.de = faultlog_we;
-  assign hw2reg.reset.de                 = faultlog_we;
-
   always_comb begin
     if (fault_logged) begin
-      hw2reg.fault_log.fault_valid.d = 1'b1;
-      hw2reg.fault_log.fault_type.d  = fault_type_latched;
-      hw2reg.fault_log.fault_dir.d   = (fault_dir_latched == TMU_DIR_WRITE);
-      hw2reg.fault_log.fault_id.d    = 16'(fault_id_latched);
-      hw2reg.fault_log.fault_phase.d = 4'(fault_phase_latched);
+      faultlog_valid_d = 1'b1;
+      faultlog_type_d  = fault_type_latched;
+      faultlog_dir_d   = (fault_dir_latched == TMU_DIR_WRITE);
+      faultlog_id_d    = 16'(fault_id_latched);
+      faultlog_phase_d = 4'(fault_phase_latched);
     end else begin
-      hw2reg.fault_log.fault_valid.d = faultlog_we ? faultlog_d.fvalid : 1'b0;
-      hw2reg.fault_log.fault_type.d  = faultlog_we ? faultlog_d.ftype  : '0;
-      hw2reg.fault_log.fault_dir.d   = faultlog_we ? (faultlog_d.fdir == TMU_DIR_WRITE) : 1'b0;
-      hw2reg.fault_log.fault_id.d    = faultlog_we ? 16'(faultlog_d.fid) : '0;
-      hw2reg.fault_log.fault_phase.d = faultlog_we ? 4'(faultlog_d.fphase) : '0;
+      faultlog_valid_d = faultlog_we ? faultlog_d.fvalid : 1'b0;
+      faultlog_type_d  = faultlog_we ? faultlog_d.ftype  : '0;
+      faultlog_dir_d   = faultlog_we ? (faultlog_d.fdir == TMU_DIR_WRITE) : 1'b0;
+      faultlog_id_d    = faultlog_we ? 16'(faultlog_d.fid) : '0;
+      faultlog_phase_d = faultlog_we ? 4'(faultlog_d.fphase) : '0;
     end
-    hw2reg.reset.d = rst_req_o ? 1'b1 : 1'b0;
+    reset_d = rst_req_o ? 1'b1 : 1'b0;
   end
 
   assign fault_o   = fault_active || wr_evt_ovf || rd_evt_ovf;
