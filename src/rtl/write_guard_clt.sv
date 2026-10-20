@@ -98,7 +98,7 @@ module write_guard_clt
   logic timeout_aw, reset_aw;
   id_t  abort_id_aw;
 
-  sticky_clt i_awvalid_sticky (
+  tmu_sticky i_awvalid_sticky (
     .clk_i,
     .rst_ni,
     .release_i ( prescaled_en_i  ),
@@ -106,7 +106,7 @@ module write_guard_clt
     .sticky_o  ( aw_valid_sticky )
   );
 
-  sticky_clt i_awready_sticky (
+  tmu_sticky i_awready_sticky (
     .clk_i,
     .rst_ni,
     .release_i ( prescaled_en_i  ),
@@ -114,7 +114,7 @@ module write_guard_clt
     .sticky_o  ( aw_ready_sticky )
   );
 
-  tmu_hs_counter_clt #(
+  tmu_hs_counter #(
     .hs_cnt_t ( hs_cnt_t ),
     .id_t     ( id_t     )
   ) i_aw_prehs (

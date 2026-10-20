@@ -82,7 +82,7 @@ module read_guard_clt
   logic timeout_ar, reset_ar;
   id_t  abort_id_ar;
 
-  sticky_clt i_arvalid_sticky (
+  tmu_sticky i_arvalid_sticky (
     .clk_i,
     .rst_ni,
     .release_i ( prescaled_en_i  ),
@@ -90,7 +90,7 @@ module read_guard_clt
     .sticky_o  ( ar_valid_sticky )
   );
 
-  sticky_clt i_arready_sticky (
+  tmu_sticky i_arready_sticky (
     .clk_i,
     .rst_ni,
     .release_i ( prescaled_en_i  ),
@@ -98,7 +98,7 @@ module read_guard_clt
     .sticky_o  ( ar_ready_sticky )
   );
 
-  tmu_hs_counter_clt #(
+  tmu_hs_counter #(
     .hs_cnt_t ( hs_cnt_t ),
     .id_t     ( id_t     )
   ) i_ar_prehs (

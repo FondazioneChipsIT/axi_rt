@@ -86,7 +86,7 @@ module axi_tmu_top_ilt
   sbr_rsp_t sbr_rsp_isolated;
   logic     cut;
 
-  tmu_id_remap_ilt #(
+  tmu_id_remap #(
     .AxiSlvPortIdWidth    ( AxiIdWidth   ),
     .AxiSlvPortMaxUniqIds ( MaxUniqIds   ),
     .AxiMaxTxnsPerId      ( MaxTxnsPerId ),
@@ -145,7 +145,7 @@ module axi_tmu_top_ilt
   end
 
   logic prescaled_en;
-  timebase_ilt #(.DivFactor(PrescalerDiv)) i_prescaler (.clk_i, .rst_ni, .tick_o(prescaled_en));
+  tmu_timebase #(.DivFactor(PrescalerDiv)) i_prescaler (.clk_i, .rst_ni, .tick_o(prescaled_en));
 
   logic          wr_timeout, wr_reset_req, rd_reset_req;
   int_id_t       wr_abort_id;

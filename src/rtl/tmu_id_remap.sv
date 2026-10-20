@@ -19,7 +19,7 @@
 /// Ready signals are NOT gated - they pass through combinationally.
 ///
 /// This maintains ID independence by using a lookup table for remapping.
-module tmu_id_remap_clt #(
+module tmu_id_remap #(
   /// ID width of the AXI4+ATOP slave port.
   parameter int unsigned AxiSlvPortIdWidth = 32'd0,
   /// Maximum number of different IDs that can be in flight at the slave port.
@@ -133,19 +133,19 @@ module tmu_id_remap_clt #(
   ) i_wr_table (
     .clk_i,
     .rst_ni,
-    .free_o          ( wr_free                                 ),
-    .free_oup_id_o   ( wr_free_oup_id                          ),
-    .full_o          ( wr_full                                 ),
+    .free_o          ( wr_free                                   ),
+    .free_oup_id_o   ( wr_free_oup_id                            ),
+    .full_o          ( wr_full                                   ),
     .push_i          ( slv_req_i.aw_valid && mst_resp_i.aw_ready ),
-    .push_inp_id_i   ( slv_req_i.aw.id                         ),
-    .push_oup_id_i   ( wr_push_oup_id                          ),
-    .exists_inp_id_i ( slv_req_i.aw.id                         ),
-    .exists_o        ( wr_exists                               ),
-    .exists_oup_id_o ( wr_exists_id                            ),
-    .exists_full_o   ( wr_exists_full                          ),
-    .pop_i           ( slv_resp_o.b_valid && slv_req_i.b_ready ),
-    .pop_oup_id_i    ( mst_resp_i.b.id[IdxWidth-1:0]           ),
-    .pop_inp_id_o    ( slv_resp_o.b.id                         )
+    .push_inp_id_i   ( slv_req_i.aw.id                           ),
+    .push_oup_id_i   ( wr_push_oup_id                            ),
+    .exists_inp_id_i ( slv_req_i.aw.id                           ),
+    .exists_o        ( wr_exists                                 ),
+    .exists_oup_id_o ( wr_exists_id                              ),
+    .exists_full_o   ( wr_exists_full                            ),
+    .pop_i           ( slv_resp_o.b_valid && slv_req_i.b_ready   ),
+    .pop_oup_id_i    ( mst_resp_i.b.id[IdxWidth-1:0]             ),
+    .pop_inp_id_o    ( slv_resp_o.b.id                           )
   );
 
   // Read channel ID remap table

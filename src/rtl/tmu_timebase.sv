@@ -4,7 +4,7 @@
 
 // Chaoqun Liang <chaoqun.liang@unibo.it>
 
-module timebase_clt #(
+module tmu_timebase #(
   parameter int unsigned DivFactor = 1
 )(
     input logic clk_i,

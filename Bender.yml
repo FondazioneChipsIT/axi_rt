@@ -28,21 +28,17 @@ sources:
       - src/registers/axi_tmu_clt_reg_top.sv
       - src/registers/axi_tmu_plt_reg_pkg.sv
       - src/registers/axi_tmu_plt_reg_top.sv
+      - src/rtl/tmu_timebase.sv
+      - src/rtl/tmu_sticky.sv
+      - src/rtl/tmu_id_remap.sv
+      - src/rtl/tmu_hs_counter.sv
       - src/rtl/axi_tmu_pkg_ilt.sv
-      - src/rtl/timebase_ilt.sv
-      - src/rtl/sticky_ilt.sv
-      - src/rtl/tmu_id_remap_ilt.sv
-      - src/rtl/tmu_hs_counter_ilt.sv
       - src/rtl/tmu_wr_inflight_ilt.sv
       - src/rtl/tmu_rd_inflight_ilt.sv
       - src/rtl/write_guard_ilt.sv
       - src/rtl/read_guard_ilt.sv
       - src/rtl/axi_tmu_top_ilt.sv
       - src/rtl/axi_tmu_pkg_clt.sv
-      - src/rtl/timebase_clt.sv
-      - src/rtl/sticky_clt.sv
-      - src/rtl/tmu_id_remap_clt.sv
-      - src/rtl/tmu_hs_counter_clt.sv
       - src/rtl/tmu_wr_inflight_clt.sv
       - src/rtl/tmu_rd_inflight_clt.sv
       - src/rtl/write_guard_clt.sv
