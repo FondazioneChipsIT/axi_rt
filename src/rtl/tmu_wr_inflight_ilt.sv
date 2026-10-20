@@ -8,8 +8,8 @@
 // - O(N_ID) state: tracks num_txn and b_timeout_cnt per active ID
 // - No per-transaction linked_data_q or W-FIFO storage
 
-module tmu_wr_inflight
-  import axi_tmu_pkg::*;
+module tmu_wr_inflight_ilt
+  import axi_tmu_pkg_ilt::*;
 #(
   parameter int unsigned HtCapacity   = 1,
   parameter int unsigned MaxTxnsPerId = 1,

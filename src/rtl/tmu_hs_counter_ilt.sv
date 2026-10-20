@@ -15,7 +15,7 @@
 // Monitors the window between VALID assertion and READY assertion
 // Counts prescaled ticks while waiting for handshake
 
-module tmu_hs_counter #(
+module tmu_hs_counter_ilt #(
   parameter type hs_cnt_t = logic,
   parameter type id_t     = logic
 ) (

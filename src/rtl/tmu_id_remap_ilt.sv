@@ -19,7 +19,7 @@
 /// Ready signals are NOT gated - they pass through combinationally.
 ///
 /// This maintains ID independence by using a lookup table for remapping.
-module tmu_id_remap #(
+module tmu_id_remap_ilt #(
   /// ID width of the AXI4+ATOP slave port.
   parameter int unsigned AxiSlvPortIdWidth = 32'd0,
   /// Maximum number of different IDs that can be in flight at the slave port.

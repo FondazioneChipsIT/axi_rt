@@ -14,7 +14,7 @@
 // - Output is cleared/released on tick (release_i)
 // - If input is HIGH when tick arrives, output stays HIGH
 
-module sticky (
+module sticky_ilt (
   input  logic clk_i,
   input  logic rst_ni,
   input  logic release_i,   // prescaled tick - clears the latch

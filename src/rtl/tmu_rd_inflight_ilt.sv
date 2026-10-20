@@ -8,8 +8,8 @@
 // - O(N_ID) state: tracks num_txn and r_timeout_cnt per active ID
 // - No per-transaction linked_data_q storage
 
-module tmu_rd_inflight
-  import axi_tmu_pkg::*;
+module tmu_rd_inflight_ilt
+  import axi_tmu_pkg_ilt::*;
 #(
   parameter int unsigned HtCapacity   = 1,
   parameter int unsigned MaxTxnsPerId = 1,

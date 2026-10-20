@@ -4,7 +4,7 @@
 
 // Chaoqun Liang <chaoqun.liang@unibo.it>
 
-module timebase #(
+module timebase_ilt #(
   parameter int unsigned DivFactor = 1
 )(
     input logic clk_i,

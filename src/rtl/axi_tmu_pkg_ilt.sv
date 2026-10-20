@@ -7,7 +7,7 @@
 `include "axi/typedef.svh"
 `include "register_interface/typedef.svh"
 
-package axi_tmu_pkg;
+package axi_tmu_pkg_ilt;
 
   // Monitor parameters
   parameter int unsigned MaxUniqIds    = 2;

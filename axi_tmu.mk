@@ -9,7 +9,7 @@ PYTHON3  ?= python3
 REGTOOL  ?= $(shell $(BENDER) path register_interface)/vendor/lowrisc_opentitan/util/regtool.py
 QUESTA 	 ?= questa-2023.4
 TBENCH   ?= tb_axi_tmu
-DUT      ?= axi_tmu_top
+DUT      ?= axi_tmu_top_ilt
 
 # Design and simulation variables
 TMU_ROOT      ?= $(shell $(BENDER) path axi_tmu)

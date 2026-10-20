@@ -11,7 +11,7 @@
 
 module tb_axi_tmu;
   import axi_pkg::*;
-  import axi_tmu_pkg::*;
+  import axi_tmu_pkg_ilt::*;
 
   parameter int unsigned TbMaxUniqIds    = 16;
   parameter int unsigned TbMaxTxnsPerId  = 64;
@@ -215,7 +215,7 @@ module tb_axi_tmu;
     .rst_no       ( rst_n    )
   );
 
-  axi_tmu_top #(
+  axi_tmu_top_ilt #(
     .MaxUniqIds   ( TbMaxUniqIds   ),
     .MaxTxnsPerId ( TbMaxTxnsPerId ),
     .MaxWrTxns    ( TbMaxWrTxns    ),

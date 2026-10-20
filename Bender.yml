@@ -28,20 +28,20 @@ sources:
       - src/registers/axi_tmu_clt_reg_top.sv
       - src/registers/axi_tmu_plt_reg_pkg.sv
       - src/registers/axi_tmu_plt_reg_top.sv
-      - src/rtl/axi_tmu_pkg.sv
-      - src/rtl/timebase.sv
-      - src/rtl/sticky.sv
-      - src/rtl/tmu_id_remap.sv
-      - src/rtl/tmu_hs_counter.sv
-      - src/rtl/tmu_wr_inflight.sv
-      - src/rtl/tmu_rd_inflight.sv
-      - src/rtl/write_guard.sv
-      - src/rtl/read_guard.sv
-      - src/rtl/axi_tmu_top.sv 
+      - src/rtl/axi_tmu_pkg_ilt.sv
+      - src/rtl/timebase_ilt.sv
+      - src/rtl/sticky_ilt.sv
+      - src/rtl/tmu_id_remap_ilt.sv
+      - src/rtl/tmu_hs_counter_ilt.sv
+      - src/rtl/tmu_wr_inflight_ilt.sv
+      - src/rtl/tmu_rd_inflight_ilt.sv
+      - src/rtl/write_guard_ilt.sv
+      - src/rtl/read_guard_ilt.sv
+      - src/rtl/axi_tmu_top_ilt.sv 
   
   - target: tmu_synth
     files:
-      - src/rtl/axi_tmu_pkg.sv
+      - src/rtl/axi_tmu_pkg_ilt.sv
       - src/rtl/tmu_wrap.sv
 
   - target: netlist_sim
@@ -53,5 +53,5 @@ sources:
   - target: tmu_test
     files:
        # Level 0
-      - src/rtl/axi_tmu_pkg.sv
+      - src/rtl/axi_tmu_pkg_ilt.sv
       - test/tb_axi_tmu.sv

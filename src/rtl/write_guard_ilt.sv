@@ -4,7 +4,7 @@
 
 // Chaoqun Liang <chaoqun.liang@unibo.it>
 
-module write_guard #(
+module write_guard_ilt #(
   parameter int unsigned MaxUniqIds   = 32,
   parameter int unsigned MaxTxnsPerId = 32,
   parameter type id_t                 = logic,
@@ -42,8 +42,8 @@ module write_guard #(
   output id_t            fab_b_id_o,
 
   output logic                         fault_pulse_o,
-  output axi_tmu_pkg::tmu_phase_t      fault_phase_o,
-  output axi_tmu_pkg::tmu_fault_type_t fault_type_o
+  output axi_tmu_pkg_ilt::tmu_phase_t      fault_phase_o,
+  output axi_tmu_pkg_ilt::tmu_fault_type_t fault_type_o
 );
 
   localparam int IdCapacity          = MaxUniqIds;
@@ -65,7 +65,7 @@ module write_guard #(
   logic timeout_aw, reset_aw;
   id_t  abort_id_aw;
 
-  sticky i_awvalid_sticky (
+  sticky_ilt i_awvalid_sticky (
     .clk_i,
     .rst_ni,
     .release_i ( prescaled_en_i  ),
@@ -73,7 +73,7 @@ module write_guard #(
     .sticky_o  ( aw_valid_sticky )
   );
 
-  sticky i_awready_sticky (
+  sticky_ilt i_awready_sticky (
     .clk_i,
     .rst_ni,
     .release_i ( prescaled_en_i  ),
@@ -81,7 +81,7 @@ module write_guard #(
     .sticky_o  ( aw_ready_sticky )
   );
 
-  tmu_hs_counter #(
+  tmu_hs_counter_ilt #(
     .hs_cnt_t ( hs_cnt_t ),
     .id_t     ( id_t     )
   ) i_aw_prehs (
@@ -102,7 +102,7 @@ module write_guard #(
   logic proto_err, reset_proto;
   id_t  abort_id_proto;
 
-  tmu_wr_inflight #(
+  tmu_wr_inflight_ilt #(
     .HtCapacity    ( IdCapacity   ),
     .MaxTxnsPerId  ( MaxTxnsPerId ),
     .id_queue_t    ( id_queue_t   ),
@@ -149,34 +149,34 @@ module write_guard #(
   always_comb begin
     abort_id_o    = '0;
     fault_pulse_o = 1'b0;
-    fault_phase_o = axi_tmu_pkg::PH_NONE;
-    fault_type_o  = axi_tmu_pkg::TMU_FLT_NONE;
+    fault_phase_o = axi_tmu_pkg_ilt::PH_NONE;
+    fault_type_o  = axi_tmu_pkg_ilt::TMU_FLT_NONE;
 
     if (timeout_aw) begin
       abort_id_o    = abort_id_aw;
       fault_pulse_o = 1'b1;
-      fault_phase_o = axi_tmu_pkg::PH_AW;
-      fault_type_o  = axi_tmu_pkg::TMU_FLT_TIMEOUT;
+      fault_phase_o = axi_tmu_pkg_ilt::PH_AW;
+      fault_type_o  = axi_tmu_pkg_ilt::TMU_FLT_TIMEOUT;
     end else if (timeout_b) begin
       abort_id_o    = timeout_id_b;
       fault_pulse_o = 1'b1;
-      fault_phase_o = axi_tmu_pkg::PH_B;
-      fault_type_o  = axi_tmu_pkg::TMU_FLT_TIMEOUT;
+      fault_phase_o = axi_tmu_pkg_ilt::PH_B;
+      fault_type_o  = axi_tmu_pkg_ilt::TMU_FLT_TIMEOUT;
     end else if (proto_err) begin
       abort_id_o    = abort_id_proto;
       fault_pulse_o = 1'b1;
-      fault_phase_o = axi_tmu_pkg::PH_B;
-      fault_type_o  = axi_tmu_pkg::TMU_FLT_PROTO;
+      fault_phase_o = axi_tmu_pkg_ilt::PH_B;
+      fault_type_o  = axi_tmu_pkg_ilt::TMU_FLT_PROTO;
     end else if (slverr_b) begin
       abort_id_o    = bid_i;
       fault_pulse_o = 1'b1;
-      fault_phase_o = axi_tmu_pkg::PH_B;
-      fault_type_o  = axi_tmu_pkg::TMU_FLT_SLVERR;
+      fault_phase_o = axi_tmu_pkg_ilt::PH_B;
+      fault_type_o  = axi_tmu_pkg_ilt::TMU_FLT_SLVERR;
     end else if (evt_ovf_o) begin
       abort_id_o    = evt_ovf_id_o;
       fault_pulse_o = 1'b1;
-      fault_phase_o = axi_tmu_pkg::PH_AW;
-      fault_type_o  = axi_tmu_pkg::TMU_FLT_OVERFLOW;
+      fault_phase_o = axi_tmu_pkg_ilt::PH_AW;
+      fault_type_o  = axi_tmu_pkg_ilt::TMU_FLT_OVERFLOW;
     end
   end
 

@@ -4,9 +4,9 @@
 
 // Chaoqun Liang <chaoqun.liang@unibo.it>
 
-import axi_tmu_pkg::*;
+import axi_tmu_pkg_ilt::*;
 
-module tmu_wrap (
+module tmu_wrap_ilt (
   input  logic               clk_i,
   input  logic               rst_ni,
   input  mgr_req_t           mgr_req,
@@ -24,7 +24,7 @@ module tmu_wrap (
   input  logic               rst_stat
 );
 
-axi_tmu_top #(
+axi_tmu_top_ilt #(
   .MaxUniqIds    (MaxUniqIds),
   .MaxTxnsPerId  (MaxTxnsPerId),
   .MaxWrTxns     (MaxWrTxns  ),
@@ -52,4 +52,4 @@ axi_tmu_top #(
   .reset_clear_i ( rst_stat   )
 );
 
- endmodule: tmu_wrap
+ endmodule: tmu_wrap_ilt
