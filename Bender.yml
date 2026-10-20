@@ -46,7 +46,7 @@ sources:
   - target: tmu_synth
     files:
       - src/rtl/axi_tmu_pkg.sv
-      - src/rtl/tmu_wrap.sv
+      - src/rtl/axi_tmu_wrap.sv
 
   - target: netlist_sim
     files:

@@ -6,7 +6,9 @@
 
 import axi_tmu_pkg::*;
 
-module tmu_wrap_clt (
+module tmu_wrap #(
+  parameter tmu_mode_e TmuMode = ILT_MODE
+) (
   input  logic               clk_i,
   input  logic               rst_ni,
   input  mgr_req_t           mgr_req,
@@ -25,7 +27,7 @@ module tmu_wrap_clt (
 );
 
 axi_tmu_top #(
-  .TmuMode      ( CLT_MODE     ),
+  .TmuMode      ( TmuMode      ),
   .MaxUniqIds   ( MaxUniqIds   ),
   .MaxTxnsPerId ( MaxTxnsPerId ),
   .MaxWrTxns    ( MaxWrTxns    ),
@@ -53,4 +55,4 @@ axi_tmu_top #(
   .reset_clear_i ( rst_stat )
 );
 
- endmodule: tmu_wrap_clt
+ endmodule: tmu_wrap
