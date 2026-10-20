@@ -37,7 +37,17 @@ sources:
       - src/rtl/tmu_rd_inflight_ilt.sv
       - src/rtl/write_guard_ilt.sv
       - src/rtl/read_guard_ilt.sv
-      - src/rtl/axi_tmu_top_ilt.sv 
+      - src/rtl/axi_tmu_top_ilt.sv
+      - src/rtl/axi_tmu_pkg_clt.sv
+      - src/rtl/timebase_clt.sv
+      - src/rtl/sticky_clt.sv
+      - src/rtl/tmu_id_remap_clt.sv
+      - src/rtl/tmu_hs_counter_clt.sv
+      - src/rtl/tmu_wr_inflight_clt.sv
+      - src/rtl/tmu_rd_inflight_clt.sv
+      - src/rtl/write_guard_clt.sv
+      - src/rtl/read_guard_clt.sv
+      - src/rtl/axi_tmu_top_clt.sv
   
   - target: tmu_synth
     files:
