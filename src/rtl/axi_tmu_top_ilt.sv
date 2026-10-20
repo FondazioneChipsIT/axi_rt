@@ -220,6 +220,9 @@ module axi_tmu_top_ilt
 
   logic          wr_fab_all_req, rd_fab_all_req;
 
+  // Ready presented to the manager on AW, AR and W while the subordinate is cut
+  logic          cut_req_ready;
+
   if (TmuMode == ILT_MODE) begin : gen_guards_ilt
     // Track completed WLAST bursts ready for B fabrication during cut
     logic [$clog2(MaxWrTxns+1)-1:0] wlast_done_cnt_q;
@@ -242,6 +245,8 @@ module axi_tmu_top_ilt
     assign wr_fab_b_emit = wr_fab_b_valid && (wlast_done_cnt_q > 0);
     // ILT fabricates a single R beat, which is always the last one
     assign rd_fab_r_last = 1'b1;
+    // ILT keeps the manager stalled during a cut
+    assign cut_req_ready = 1'b0;
 
     write_guard_ilt #(
       .MaxUniqIds   ( MaxUniqIds   ),
@@ -315,6 +320,8 @@ module axi_tmu_top_ilt
     );
   end else if (TmuMode == CLT_MODE) begin : gen_guards_clt
     assign wr_fab_b_emit = wr_fab_b_valid;
+    // CLT accepts the requests of the manager during a cut and drains them
+    assign cut_req_ready = 1'b1;
 
     write_guard_clt #(
       .MaxUniqIds   ( MaxUniqIds   ),
@@ -464,7 +471,7 @@ module axi_tmu_top_ilt
   assign wr_fab_all_req = cut;
   assign rd_fab_all_req = cut;
 
-  // Datapath multiplexing with proper upstream ready gating during a cut
+  // Datapath multiplexing with the upstream ready policy of the mode during a cut
   always_comb begin
     sbr_req_o        = remap_req;
     sbr_rsp_isolated = sbr_rsp_i;
@@ -477,10 +484,10 @@ module axi_tmu_top_ilt
       sbr_req_o.b_ready         = 1'b0;
       sbr_req_o.r_ready         = 1'b0;
       
-      // Block upstream manager handshakes by gating ready signals low
-      sbr_rsp_isolated.aw_ready = 1'b0;
-      sbr_rsp_isolated.ar_ready = 1'b0;
-      sbr_rsp_isolated.w_ready  = 1'b0;
+      // Upstream manager requests: stalled or drained, depending on the mode
+      sbr_rsp_isolated.aw_ready = cut_req_ready;
+      sbr_rsp_isolated.ar_ready = cut_req_ready;
+      sbr_rsp_isolated.w_ready  = cut_req_ready;
       sbr_rsp_isolated.b_valid  = 1'b0;
       sbr_rsp_isolated.r_valid  = 1'b0;
     end
@@ -495,7 +502,7 @@ module axi_tmu_top_ilt
     if (rd_fab_r_valid) begin
       sbr_rsp_isolated.r_valid = 1'b1;
       sbr_rsp_isolated.r.resp  = axi_pkg::RESP_SLVERR;
-      sbr_rsp_isolated.r.last  = 1'b1;
+      sbr_rsp_isolated.r.last  = rd_fab_r_last;
       sbr_rsp_isolated.r.id    = rd_fab_r_id;
       sbr_rsp_isolated.r.data  = '0;
       sbr_rsp_isolated.r.user  = '0;
