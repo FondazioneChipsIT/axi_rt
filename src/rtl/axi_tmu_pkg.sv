@@ -89,14 +89,6 @@ package axi_tmu_pkg;
     PH_ILT_R    = 3'd4
   } tmu_phase_ilt_t;
 
-  typedef struct packed {
-    logic                     fvalid;
-    tmu_fault_type_t          ftype;
-    tmu_dir_t                 fdir;
-    tmu_phase_ilt_t           fphase;
-    logic [AxiIntIdWidth-1:0] fid;
-  } tmu_fault_log_ilt_t;
-
   //******* CLT IMPLEMENTATION VARIABLES *******//
 
   typedef enum logic [1:0] {
