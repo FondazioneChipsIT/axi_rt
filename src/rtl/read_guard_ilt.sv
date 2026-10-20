@@ -43,8 +43,8 @@ module read_guard_ilt #(
   output id_t            fab_r_id_o,
 
   output logic                         fault_pulse_o,
-  output axi_tmu_pkg_ilt::tmu_phase_t      fault_phase_o,
-  output axi_tmu_pkg_ilt::tmu_fault_type_t fault_type_o
+  output axi_tmu_pkg::tmu_phase_ilt_t      fault_phase_o,
+  output axi_tmu_pkg::tmu_fault_type_t fault_type_o
 );
 
   localparam int IdCapacity          = MaxUniqIds;
@@ -150,34 +150,34 @@ module read_guard_ilt #(
   always_comb begin
     abort_id_o    = '0;
     fault_pulse_o = 1'b0;
-    fault_phase_o = axi_tmu_pkg_ilt::PH_NONE;
-    fault_type_o  = axi_tmu_pkg_ilt::TMU_FLT_NONE;
+    fault_phase_o = axi_tmu_pkg::PH_ILT_NONE;
+    fault_type_o  = axi_tmu_pkg::TMU_FLT_NONE;
 
     if (timeout_ar) begin
       abort_id_o    = abort_id_ar;
       fault_pulse_o = 1'b1;
-      fault_phase_o = axi_tmu_pkg_ilt::PH_AR;
-      fault_type_o  = axi_tmu_pkg_ilt::TMU_FLT_TIMEOUT;
+      fault_phase_o = axi_tmu_pkg::PH_ILT_AR;
+      fault_type_o  = axi_tmu_pkg::TMU_FLT_TIMEOUT;
     end else if (timeout_r) begin
       abort_id_o    = timeout_id_r;
       fault_pulse_o = 1'b1;
-      fault_phase_o = axi_tmu_pkg_ilt::PH_R;
-      fault_type_o  = axi_tmu_pkg_ilt::TMU_FLT_TIMEOUT;
+      fault_phase_o = axi_tmu_pkg::PH_ILT_R;
+      fault_type_o  = axi_tmu_pkg::TMU_FLT_TIMEOUT;
     end else if (proto_err) begin
       abort_id_o    = abort_id_proto;
       fault_pulse_o = 1'b1;
-      fault_phase_o = axi_tmu_pkg_ilt::PH_R;
-      fault_type_o  = axi_tmu_pkg_ilt::TMU_FLT_PROTO;
+      fault_phase_o = axi_tmu_pkg::PH_ILT_R;
+      fault_type_o  = axi_tmu_pkg::TMU_FLT_PROTO;
     end else if (slverr_r) begin
       abort_id_o    = rid_i;
       fault_pulse_o = 1'b1;
-      fault_phase_o = axi_tmu_pkg_ilt::PH_R;
-      fault_type_o  = axi_tmu_pkg_ilt::TMU_FLT_SLVERR;
+      fault_phase_o = axi_tmu_pkg::PH_ILT_R;
+      fault_type_o  = axi_tmu_pkg::TMU_FLT_SLVERR;
     end else if (evt_ovf_o) begin
       abort_id_o    = evt_ovf_id_o;
       fault_pulse_o = 1'b1;
-      fault_phase_o = axi_tmu_pkg_ilt::PH_AR;
-      fault_type_o  = axi_tmu_pkg_ilt::TMU_FLT_OVERFLOW;
+      fault_phase_o = axi_tmu_pkg::PH_ILT_AR;
+      fault_type_o  = axi_tmu_pkg::TMU_FLT_OVERFLOW;
     end
   end
 

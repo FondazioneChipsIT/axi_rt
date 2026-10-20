@@ -9,7 +9,7 @@
 // - No per-transaction linked_data_q or W-FIFO storage
 
 module tmu_wr_inflight_ilt
-  import axi_tmu_pkg_ilt::*;
+  import axi_tmu_pkg::*;
 #(
   parameter int unsigned HtCapacity   = 1,
   parameter int unsigned MaxTxnsPerId = 1,

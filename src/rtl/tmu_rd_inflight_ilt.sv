@@ -9,7 +9,7 @@
 // - No per-transaction linked_data_q storage
 
 module tmu_rd_inflight_ilt
-  import axi_tmu_pkg_ilt::*;
+  import axi_tmu_pkg::*;
 #(
   parameter int unsigned HtCapacity   = 1,
   parameter int unsigned MaxTxnsPerId = 1,

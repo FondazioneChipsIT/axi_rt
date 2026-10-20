@@ -5,7 +5,7 @@
 // Chaoqun Liang <chaoqun.liang@unibo.it>
 
 module axi_tmu_top_ilt
-  import axi_tmu_pkg_ilt::*;
+  import axi_tmu_pkg::*;
 #(
   parameter int unsigned MaxUniqIds    = 16,
   parameter int unsigned MaxTxnsPerId  = 2,
@@ -154,8 +154,8 @@ module axi_tmu_top_ilt
   logic          wr_fab_b_valid, wr_fab_b_emit;
   int_id_t       wr_fab_b_id;
   logic          wr_fault_pulse;
-  tmu_phase_t    wr_fault_phase;
-  axi_tmu_pkg_ilt::tmu_fault_type_t wr_fault_type;
+  tmu_phase_ilt_t    wr_fault_phase;
+  axi_tmu_pkg::tmu_fault_type_t wr_fault_type;
 
   logic          rd_timeout;
   int_id_t       rd_abort_id;
@@ -164,8 +164,8 @@ module axi_tmu_top_ilt
   logic          rd_fab_r_valid;
   int_id_t       rd_fab_r_id;
   logic          rd_fault_pulse;
-  tmu_phase_t    rd_fault_phase;
-  axi_tmu_pkg_ilt::tmu_fault_type_t rd_fault_type;
+  tmu_phase_ilt_t    rd_fault_phase;
+  axi_tmu_pkg::tmu_fault_type_t rd_fault_type;
 
   logic          wr_fab_all_req, rd_fab_all_req;
 
@@ -250,9 +250,9 @@ module axi_tmu_top_ilt
 
   logic                         fault_logged;
   tmu_dir_t                     fault_dir_latched;
-  axi_tmu_pkg_ilt::tmu_fault_type_t fault_type_latched;
+  axi_tmu_pkg::tmu_fault_type_t fault_type_latched;
   int_id_t                      fault_id_latched;
-  tmu_phase_t                   fault_phase_latched;
+  tmu_phase_ilt_t                   fault_phase_latched;
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
@@ -266,7 +266,7 @@ module axi_tmu_top_ilt
       fault_dir_latched    <= TMU_DIR_NONE;
       fault_type_latched   <= TMU_FLT_NONE;
       fault_id_latched     <= '0;
-      fault_phase_latched  <= PH_NONE;
+      fault_phase_latched  <= PH_ILT_NONE;
     end else if (reset_clear_i) begin
       first_fault_occurred <= 1'b0;
       wr_timeout_latched   <= 1'b0;
@@ -278,7 +278,7 @@ module axi_tmu_top_ilt
       fault_dir_latched    <= TMU_DIR_NONE;
       fault_type_latched   <= TMU_FLT_NONE;
       fault_id_latched     <= '0;
-      fault_phase_latched  <= PH_NONE;
+      fault_phase_latched  <= PH_ILT_NONE;
     end else if (!first_fault_occurred) begin
       if (wr_timeout || wr_reset_req || wr_fault_pulse) begin
         wr_timeout_latched   <= wr_timeout;
@@ -355,7 +355,7 @@ module axi_tmu_top_ilt
   assign faultlog_we = (!fault_logged && (wr_fault_pulse || rd_fault_pulse)) ||
                        (wr_evt_ovf || rd_evt_ovf);
 
-  axi_tmu_pkg_ilt::tmu_fault_log_t faultlog_d;
+  axi_tmu_pkg::tmu_fault_log_ilt_t faultlog_d;
 
   always_comb begin
     faultlog_d = '0;

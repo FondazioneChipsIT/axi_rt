@@ -5,7 +5,7 @@
 // Chaoqun Liang <chaoqun.liang@unibo.it>
 
 module read_guard_clt
-  import axi_tmu_pkg_clt::*;
+  import axi_tmu_pkg::*;
 #(
   parameter int unsigned MaxUniqIds    = 32,
   parameter int unsigned MaxRdTxns     = 32,
@@ -48,8 +48,8 @@ module read_guard_clt
   output logic           fab_r_last_o,
 
   output logic                         fault_pulse_o,
-  output axi_tmu_pkg_clt::tmu_phase_t      fault_phase_o,
-  output axi_tmu_pkg_clt::tmu_fault_type_t fault_type_o
+  output axi_tmu_pkg::tmu_phase_clt_t      fault_phase_o,
+  output axi_tmu_pkg::tmu_fault_type_t fault_type_o
 );
 
   localparam int HtCapacity          = (MaxUniqIds <= MaxRdTxns) ? MaxUniqIds : MaxRdTxns;
@@ -177,34 +177,34 @@ module read_guard_clt
   always_comb begin
     abort_id_o    = '0;
     fault_pulse_o = 1'b0;
-    fault_phase_o = axi_tmu_pkg_clt::PH_NONE;
-    fault_type_o  = axi_tmu_pkg_clt::TMU_FLT_NONE;
+    fault_phase_o = axi_tmu_pkg::PH_CLT_NONE;
+    fault_type_o  = axi_tmu_pkg::TMU_FLT_NONE;
 
     if (timeout_ar) begin
       abort_id_o    = abort_id_ar;
       fault_pulse_o = 1'b1;
-      fault_phase_o = axi_tmu_pkg_clt::PH_AR;
-      fault_type_o  = axi_tmu_pkg_clt::TMU_FLT_TIMEOUT;
+      fault_phase_o = axi_tmu_pkg::PH_CLT_AR;
+      fault_type_o  = axi_tmu_pkg::TMU_FLT_TIMEOUT;
     end else if (timeout_r) begin
       abort_id_o    = id_r;
       fault_pulse_o = 1'b1;
-      fault_phase_o = axi_tmu_pkg_clt::PH_RDATA;
-      fault_type_o  = axi_tmu_pkg_clt::TMU_FLT_TIMEOUT;
+      fault_phase_o = axi_tmu_pkg::PH_CLT_RDATA;
+      fault_type_o  = axi_tmu_pkg::TMU_FLT_TIMEOUT;
     end else if (proto_err) begin
       abort_id_o    = abort_id_proto;
       fault_pulse_o = 1'b1;
-      fault_phase_o = axi_tmu_pkg_clt::PH_RDATA;
-      fault_type_o  = axi_tmu_pkg_clt::TMU_FLT_PROTO;
+      fault_phase_o = axi_tmu_pkg::PH_CLT_RDATA;
+      fault_type_o  = axi_tmu_pkg::TMU_FLT_PROTO;
     end else if (slverr_r) begin
       abort_id_o    = r_id_i;
       fault_pulse_o = 1'b1;
-      fault_phase_o = axi_tmu_pkg_clt::PH_RDATA;
-      fault_type_o  = axi_tmu_pkg_clt::TMU_FLT_SLVERR;
+      fault_phase_o = axi_tmu_pkg::PH_CLT_RDATA;
+      fault_type_o  = axi_tmu_pkg::TMU_FLT_SLVERR;
     end else if (evt_ovf_o) begin
       abort_id_o    = evt_ovf_id_o;
       fault_pulse_o = 1'b1;
-      fault_phase_o = axi_tmu_pkg_clt::PH_AR;
-      fault_type_o  = axi_tmu_pkg_clt::TMU_FLT_OVERFLOW;
+      fault_phase_o = axi_tmu_pkg::PH_CLT_AR;
+      fault_type_o  = axi_tmu_pkg::TMU_FLT_OVERFLOW;
     end
   end
 

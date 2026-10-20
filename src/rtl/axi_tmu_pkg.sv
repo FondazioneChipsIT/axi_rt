@@ -7,18 +7,15 @@
 `include "axi/typedef.svh"
 `include "register_interface/typedef.svh"
 
-package axi_tmu_pkg_clt;
+package axi_tmu_pkg;
+
+  //******* COMMON TO ALL IMPLEMENTATIONS *******//
 
   typedef enum logic [1:0] {
-    WRITE_ADDRESS,
-    WRITE_DATA,
-    WRITE_RESPONSE
-  } write_state_t;
-
-  typedef enum logic [1:0] {
-    READ_ADDRESS,
-    READ_DATA
-  } read_state_t;
+    ILT_MODE = 2'b00,
+    CLT_MODE = 2'b01,
+    PLT_MODE = 2'b10
+  } tmu_mode_e;
 
   // Monitor parameters
   parameter int unsigned MaxUniqIds    = 2;
@@ -67,7 +64,7 @@ package axi_tmu_pkg_clt;
     TMU_FLT_TIMEOUT  = 3'd1,   // guard timeout (wr/rd)
     TMU_FLT_SLVERR   = 3'd2,   // self-reported RESP!=OKAY
     TMU_FLT_OVERFLOW = 3'd3,   // resource overflow/ovf event
-    TMU_FLT_PROTO    = 3'd4    // unexpected BID/RID or beat mismatch
+    TMU_FLT_PROTO    = 3'd4    // unexpected BID/RID etc.
   } tmu_fault_type_t;
 
   typedef enum logic [1:0] {
@@ -76,23 +73,56 @@ package axi_tmu_pkg_clt;
     TMU_DIR_WRITE = 2'd2
   } tmu_dir_t;
 
+  //******* ILT IMPLEMENTATION VARIABLES *******//
+
   typedef enum logic [2:0] {
-    PH_NONE   = 3'd0,
-    // Write channels (CLT)
-    PH_AW     = 3'd1,
-    PH_WDATA  = 3'd2,
-    PH_BRSP   = 3'd3,
-    // Read channels (CLT)
-    PH_AR     = 3'd4,
-    PH_RDATA  = 3'd5
-  } tmu_phase_t;
+    PH_ILT_NONE = 3'd0,
+    // Write phases (ILT)
+    PH_ILT_AW   = 3'd1,
+    PH_ILT_B    = 3'd2,
+    // Read phases (ILT)
+    PH_ILT_AR   = 3'd3,
+    PH_ILT_R    = 3'd4
+  } tmu_phase_ilt_t;
 
   typedef struct packed {
     logic                     fvalid;
     tmu_fault_type_t          ftype;
     tmu_dir_t                 fdir;
-    tmu_phase_t               fphase;
+    tmu_phase_ilt_t           fphase;
     logic [AxiIntIdWidth-1:0] fid;
-  } tmu_fault_log_t;
+  } tmu_fault_log_ilt_t;
+
+  //******* CLT IMPLEMENTATION VARIABLES *******//
+
+  typedef enum logic [1:0] {
+    WRITE_ADDRESS,
+    WRITE_DATA,
+    WRITE_RESPONSE
+  } write_state_t;
+
+  typedef enum logic [1:0] {
+    READ_ADDRESS,
+    READ_DATA
+  } read_state_t;
+
+  typedef enum logic [2:0] {
+    PH_CLT_NONE  = 3'd0,
+    // Write channels (CLT)
+    PH_CLT_AW    = 3'd1,
+    PH_CLT_WDATA = 3'd2,
+    PH_CLT_BRSP  = 3'd3,
+    // Read channels (CLT)
+    PH_CLT_AR    = 3'd4,
+    PH_CLT_RDATA = 3'd5
+  } tmu_phase_clt_t;
+
+  typedef struct packed {
+    logic                     fvalid;
+    tmu_fault_type_t          ftype;
+    tmu_dir_t                 fdir;
+    tmu_phase_clt_t           fphase;
+    logic [AxiIntIdWidth-1:0] fid;
+  } tmu_fault_log_clt_t;
 
 endpackage

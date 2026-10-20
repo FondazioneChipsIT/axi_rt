@@ -12,7 +12,7 @@
 //    - Validates RLAST against expected_beats (ARLEN + 1) and drives multi-beat SLVERR drain
 
 module tmu_rd_inflight_clt
-  import axi_tmu_pkg_clt::*;
+  import axi_tmu_pkg::*;
 #(
   parameter int unsigned MaxRdTxns  = 1,
   parameter int unsigned HtCapacity = 1,

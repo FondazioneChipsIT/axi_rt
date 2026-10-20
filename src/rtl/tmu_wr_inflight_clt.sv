@@ -14,7 +14,7 @@
 //    - Tracks head transaction in WRITE_RESPONSE state (WLAST -> B_HS)
 
 module tmu_wr_inflight_clt
-  import axi_tmu_pkg_clt::*;
+  import axi_tmu_pkg::*;
 #(
   parameter int unsigned MaxWrTxns  = 1,
   parameter int unsigned HtCapacity = 1,
