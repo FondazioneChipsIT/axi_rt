@@ -4,7 +4,7 @@
 
 // Chaoqun Liang <chaoqun.liang@unibo.it>
 
-module axi_tmu_top_ilt
+module axi_tmu_top
   import axi_tmu_pkg::*;
 #(
   // Common parameters

@@ -215,7 +215,7 @@ module tb_axi_tmu;
     .rst_no       ( rst_n    )
   );
 
-  axi_tmu_top_ilt #(
+  axi_tmu_top #(
     .MaxUniqIds   ( TbMaxUniqIds   ),
     .MaxTxnsPerId ( TbMaxTxnsPerId ),
     .MaxWrTxns    ( TbMaxWrTxns    ),

@@ -113,12 +113,4 @@ package axi_tmu_pkg;
     PH_CLT_RDATA = 3'd5
   } tmu_phase_clt_t;
 
-  typedef struct packed {
-    logic                     fvalid;
-    tmu_fault_type_t          ftype;
-    tmu_dir_t                 fdir;
-    tmu_phase_clt_t           fphase;
-    logic [AxiIntIdWidth-1:0] fid;
-  } tmu_fault_log_clt_t;
-
 endpackage

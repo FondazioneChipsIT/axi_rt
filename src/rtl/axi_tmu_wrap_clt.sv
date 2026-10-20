@@ -24,32 +24,33 @@ module tmu_wrap_clt (
   input  logic               rst_stat
 );
 
-axi_tmu_top_clt #(
-  .MaxUniqIds    (MaxUniqIds),
-  .MaxTxnsPerId  (MaxTxnsPerId),
-  .MaxWrTxns     (MaxWrTxns  ),
-  .MaxRdTxns     (MaxRdTxns),
-  .AxiIdWidth    (AxiIdWidth),
-  .HsCntWidth    (HsCntWidth),
-  .PrescalerDiv  (PrescalerDiv),
-  .mgr_req_t    ( mgr_req_t       ),
-  .mgr_rsp_t    ( mgr_rsp_t      ),
-  .sbr_req_t    ( sbr_req_t       ),
-  .sbr_rsp_t    ( sbr_rsp_t      ),
-  .cfg_req_t    ( cfg_req_t       ),
-  .cfg_rsp_t    ( cfg_rsp_t       )
+axi_tmu_top #(
+  .TmuMode      ( CLT_MODE     ),
+  .MaxUniqIds   ( MaxUniqIds   ),
+  .MaxTxnsPerId ( MaxTxnsPerId ),
+  .MaxWrTxns    ( MaxWrTxns    ),
+  .MaxRdTxns    ( MaxRdTxns    ),
+  .AxiIdWidth   ( AxiIdWidth   ),
+  .HsCntWidth   ( HsCntWidth   ),
+  .PrescalerDiv ( PrescalerDiv ),
+  .mgr_req_t    ( mgr_req_t    ),
+  .mgr_rsp_t    ( mgr_rsp_t    ),
+  .sbr_req_t    ( sbr_req_t    ),
+  .sbr_rsp_t    ( sbr_rsp_t    ),
+  .cfg_req_t    ( cfg_req_t    ),
+  .cfg_rsp_t    ( cfg_rsp_t    )
 ) i_axi_tmu (
-  .clk_i       (   clk_i        ),
-  .rst_ni      (   rst_ni        ),
-  .mgr_req_i   (   mgr_req      ),
-  .mgr_rsp_o   (   mgr_rsp      ),
-  .sbr_req_o   (   sbr_req      ),
-  .sbr_rsp_i   (   sbr_rsp      ),
-  .cfg_req_i   (   cfg_req    ),
-  .cfg_rsp_o   (   cfg_rsp    ),
-  .fault_o     (   fault      ),
-  .rst_req_o   (   rst_req    ),
-  .reset_clear_i ( rst_stat   )
+  .clk_i         ( clk_i    ),
+  .rst_ni        ( rst_ni   ),
+  .mgr_req_i     ( mgr_req  ),
+  .mgr_rsp_o     ( mgr_rsp  ),
+  .sbr_req_o     ( sbr_req  ),
+  .sbr_rsp_i     ( sbr_rsp  ),
+  .cfg_req_i     ( cfg_req  ),
+  .cfg_rsp_o     ( cfg_rsp  ),
+  .fault_o       ( fault    ),
+  .rst_req_o     ( rst_req  ),
+  .reset_clear_i ( rst_stat )
 );
 
  endmodule: tmu_wrap_clt
