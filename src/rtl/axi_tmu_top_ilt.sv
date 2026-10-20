@@ -195,121 +195,204 @@ module axi_tmu_top_ilt
   assign ar_hs = mgr_req_mon.ar_valid && sbr_rsp_mon.ar_ready;
   assign r_hs  = sbr_rsp_mon.r_valid  && mgr_req_mon.r_ready;
 
-  // Track completed WLAST bursts ready for B fabrication during cut
-  logic [$clog2(MaxWrTxns+1)-1:0] wlast_done_cnt_q;
-  logic wlast_hs;
-  assign wlast_hs = remap_req.w_valid && sbr_rsp_isolated.w_ready && remap_req.w.last;
-
-  always_ff @(posedge clk_i or negedge rst_ni) begin
-    if (!rst_ni || reset_clear_i) begin
-      wlast_done_cnt_q <= '0;
-    end else begin
-      case ({wlast_hs, (sbr_rsp_isolated.b_valid && remap_req.b_ready)})
-        2'b10:   wlast_done_cnt_q <= wlast_done_cnt_q + 1'b1;
-        2'b01:   if (wlast_done_cnt_q > 0) wlast_done_cnt_q <= wlast_done_cnt_q - 1'b1;
-        default: ;
-      endcase
-    end
-  end
-
   logic prescaled_en;
   tmu_timebase #(.DivFactor(PrescalerDiv)) i_prescaler (.clk_i, .rst_ni, .tick_o(prescaled_en));
 
-  logic          wr_timeout, wr_reset_req, rd_reset_req;
-  int_id_t       wr_abort_id;
-  logic          wr_evt_ovf;
-  int_id_t       wr_evt_ovf_id;
-  logic          wr_fab_b_valid, wr_fab_b_emit;
-  int_id_t       wr_fab_b_id;
-  logic          wr_fault_pulse;
-  tmu_phase_t        wr_fault_phase;
+  logic           wr_timeout, wr_reset_req, rd_reset_req;
+  int_id_t        wr_abort_id;
+  logic           wr_evt_ovf;
+  int_id_t        wr_evt_ovf_id;
+  logic           wr_fab_b_valid, wr_fab_b_emit;
+  int_id_t        wr_fab_b_id;
+  logic           wr_fault_pulse;
+  tmu_phase_t     wr_fault_phase;
   axi_tmu_pkg::tmu_fault_type_t wr_fault_type;
 
-  logic          rd_timeout;
-  int_id_t       rd_abort_id;
-  logic          rd_evt_ovf;
-  int_id_t       rd_evt_ovf_id;
-  logic          rd_fab_r_valid;
-  int_id_t       rd_fab_r_id;
-  logic          rd_fault_pulse;
-  tmu_phase_t        rd_fault_phase;
+  logic           rd_timeout;
+  int_id_t        rd_abort_id;
+  logic           rd_evt_ovf;
+  int_id_t        rd_evt_ovf_id;
+  logic           rd_fab_r_valid, rd_fab_r_last;
+  int_id_t        rd_fab_r_id;
+  logic           rd_fault_pulse;
+  tmu_phase_t     rd_fault_phase;
   axi_tmu_pkg::tmu_fault_type_t rd_fault_type;
 
   logic          wr_fab_all_req, rd_fab_all_req;
 
-  // Only emit fabricated B once its WLAST has been drained
-  assign wr_fab_b_emit = wr_fab_b_valid && (wlast_done_cnt_q > 0);
+  if (TmuMode == ILT_MODE) begin : gen_guards_ilt
+    // Track completed WLAST bursts ready for B fabrication during cut
+    logic [$clog2(MaxWrTxns+1)-1:0] wlast_done_cnt_q;
+    logic wlast_hs;
+    assign wlast_hs = remap_req.w_valid && sbr_rsp_isolated.w_ready && remap_req.w.last;
 
-  write_guard_ilt #(
-    .MaxUniqIds   ( MaxUniqIds   ),
-    .MaxTxnsPerId ( MaxTxnsPerId ),
-    .id_t         ( int_id_t     ),
-    .hs_cnt_t     ( hs_cnt_t     ),
-    .num_cnt_t    ( num_cnt_t    ),
-    .track_cnt_t  ( track_cnt_t  )
-  ) i_write_guard (
-    .clk_i,
-    .rst_ni,
-    .reset_clear_i        ( reset_clear_i                             ),
-    .prescaled_en_i       ( prescaled_en                              ),
-    .aw_hs_i              ( aw_hs                                     ),
-    .aw_valid_i           ( mgr_req_mon.aw_valid                      ),
-    .aw_ready_i           ( sbr_rsp_mon.aw_ready                      ),
-    .b_hs_i               ( b_hs                                      ),
-    .aw_id_i              ( mgr_req_mon.aw.id                         ),
-    .bid_i                ( sbr_rsp_mon.b.id                          ),
-    .bresp_i              ( sbr_rsp_mon.b.resp                        ),
-    .b_ready_i            ( mgr_req_mon.b_ready && (wlast_done_cnt_q > 0) ),
-    .budget_avld_ardy_i   ( budget_avld_ardy                          ),
-    .budget_b2b_i         ( budget_b2b                                ),
-    .abort_id_o           ( wr_abort_id                               ),
-    .reset_req_o          ( wr_reset_req                              ),
-    .timeout_o            ( wr_timeout                                ),
-    .evt_ovf_o            ( wr_evt_ovf                                ),
-    .evt_ovf_id_o         ( wr_evt_ovf_id                             ),
-    .fab_all_req_i        ( wr_fab_all_req                            ),
-    .fab_b_valid_o        ( wr_fab_b_valid                            ),
-    .fab_b_id_o           ( wr_fab_b_id                               ),
-    .fault_pulse_o        ( wr_fault_pulse                            ),
-    .fault_phase_o        ( wr_fault_phase                            ),
-    .fault_type_o         ( wr_fault_type                             )
-  );
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+      if (!rst_ni || reset_clear_i) begin
+        wlast_done_cnt_q <= '0;
+      end else begin
+        case ({wlast_hs, (sbr_rsp_isolated.b_valid && remap_req.b_ready)})
+          2'b10:   wlast_done_cnt_q <= wlast_done_cnt_q + 1'b1;
+          2'b01:   if (wlast_done_cnt_q > 0) wlast_done_cnt_q <= wlast_done_cnt_q - 1'b1;
+          default: ;
+        endcase
+      end
+    end
 
-  read_guard_ilt #(
-    .MaxUniqIds   ( MaxUniqIds   ),
-    .MaxTxnsPerId ( MaxTxnsPerId ),
-    .hs_cnt_t     ( hs_cnt_t     ),
-    .id_t         ( int_id_t     ),
-    .num_cnt_t    ( num_cnt_t    ), // FIX: restored missing num_cnt_t parameter!
-    .track_cnt_t  ( track_cnt_t  )
-  ) i_read_guard (
-    .clk_i,
-    .rst_ni,
-    .reset_clear_i        ( reset_clear_i          ),
-    .prescaled_en_i       ( prescaled_en           ),
-    .ar_hs_i              ( ar_hs                  ),
-    .ar_valid_i           ( mgr_req_mon.ar_valid   ),
-    .ar_ready_i           ( sbr_rsp_mon.ar_ready   ),
-    .arid_i               ( mgr_req_mon.ar.id      ),
-    .r_hs_i               ( r_hs                   ),
-    .rid_i                ( sbr_rsp_mon.r.id       ),
-    .r_last_i             ( sbr_rsp_mon.r.last     ),
-    .r_ready_i            ( mgr_req_mon.r_ready    ),
-    .rresp_i              ( sbr_rsp_mon.r.resp     ),
-    .budget_avld_ardy_i   ( budget_avld_ardy       ),
-    .budget_r2r_i         ( budget_r2r             ),
-    .reset_req_o          ( rd_reset_req           ),
-    .timeout_o            ( rd_timeout             ),
-    .evt_ovf_o            ( rd_evt_ovf             ),
-    .evt_ovf_id_o         ( rd_evt_ovf_id          ),
-    .abort_id_o           ( rd_abort_id            ),
-    .fab_all_req_i        ( rd_fab_all_req         ),
-    .fab_r_valid_o        ( rd_fab_r_valid         ),
-    .fab_r_id_o           ( rd_fab_r_id            ),
-    .fault_pulse_o        ( rd_fault_pulse         ),
-    .fault_phase_o        ( rd_fault_phase         ),
-    .fault_type_o         ( rd_fault_type          )
-  );
+    // Only emit fabricated B once its WLAST has been drained
+    assign wr_fab_b_emit = wr_fab_b_valid && (wlast_done_cnt_q > 0);
+    // ILT fabricates a single R beat, which is always the last one
+    assign rd_fab_r_last = 1'b1;
+
+    write_guard_ilt #(
+      .MaxUniqIds   ( MaxUniqIds   ),
+      .MaxTxnsPerId ( MaxTxnsPerId ),
+      .id_t         ( int_id_t     ),
+      .hs_cnt_t     ( hs_cnt_t     ),
+      .num_cnt_t    ( num_cnt_t    ),
+      .track_cnt_t  ( track_cnt_t  )
+    ) i_write_guard (
+      .clk_i,
+      .rst_ni,
+      .reset_clear_i        ( reset_clear_i                             ),
+      .prescaled_en_i       ( prescaled_en                              ),
+      .aw_hs_i              ( aw_hs                                     ),
+      .aw_valid_i           ( mgr_req_mon.aw_valid                      ),
+      .aw_ready_i           ( sbr_rsp_mon.aw_ready                      ),
+      .b_hs_i               ( b_hs                                      ),
+      .aw_id_i              ( mgr_req_mon.aw.id                         ),
+      .bid_i                ( sbr_rsp_mon.b.id                          ),
+      .bresp_i              ( sbr_rsp_mon.b.resp                        ),
+      .b_ready_i            ( mgr_req_mon.b_ready && (wlast_done_cnt_q > 0) ),
+      .budget_avld_ardy_i   ( budget_avld_ardy                          ),
+      .budget_b2b_i         ( budget_b2b                                ),
+      .abort_id_o           ( wr_abort_id                               ),
+      .reset_req_o          ( wr_reset_req                              ),
+      .timeout_o            ( wr_timeout                                ),
+      .evt_ovf_o            ( wr_evt_ovf                                ),
+      .evt_ovf_id_o         ( wr_evt_ovf_id                             ),
+      .fab_all_req_i        ( wr_fab_all_req                            ),
+      .fab_b_valid_o        ( wr_fab_b_valid                            ),
+      .fab_b_id_o           ( wr_fab_b_id                               ),
+      .fault_pulse_o        ( wr_fault_pulse                            ),
+      .fault_phase_o        ( wr_fault_phase                            ),
+      .fault_type_o         ( wr_fault_type                             )
+    );
+
+    read_guard_ilt #(
+      .MaxUniqIds   ( MaxUniqIds   ),
+      .MaxTxnsPerId ( MaxTxnsPerId ),
+      .hs_cnt_t     ( hs_cnt_t     ),
+      .id_t         ( int_id_t     ),
+      .num_cnt_t    ( num_cnt_t    ),
+      .track_cnt_t  ( track_cnt_t  )
+    ) i_read_guard (
+      .clk_i,
+      .rst_ni,
+      .reset_clear_i        ( reset_clear_i          ),
+      .prescaled_en_i       ( prescaled_en           ),
+      .ar_hs_i              ( ar_hs                  ),
+      .ar_valid_i           ( mgr_req_mon.ar_valid   ),
+      .ar_ready_i           ( sbr_rsp_mon.ar_ready   ),
+      .arid_i               ( mgr_req_mon.ar.id      ),
+      .r_hs_i               ( r_hs                   ),
+      .rid_i                ( sbr_rsp_mon.r.id       ),
+      .r_last_i             ( sbr_rsp_mon.r.last     ),
+      .r_ready_i            ( mgr_req_mon.r_ready    ),
+      .rresp_i              ( sbr_rsp_mon.r.resp     ),
+      .budget_avld_ardy_i   ( budget_avld_ardy       ),
+      .budget_r2r_i         ( budget_r2r             ),
+      .reset_req_o          ( rd_reset_req           ),
+      .timeout_o            ( rd_timeout             ),
+      .evt_ovf_o            ( rd_evt_ovf             ),
+      .evt_ovf_id_o         ( rd_evt_ovf_id          ),
+      .abort_id_o           ( rd_abort_id            ),
+      .fab_all_req_i        ( rd_fab_all_req         ),
+      .fab_r_valid_o        ( rd_fab_r_valid         ),
+      .fab_r_id_o           ( rd_fab_r_id            ),
+      .fault_pulse_o        ( rd_fault_pulse         ),
+      .fault_phase_o        ( rd_fault_phase         ),
+      .fault_type_o         ( rd_fault_type          )
+    );
+  end else if (TmuMode == CLT_MODE) begin : gen_guards_clt
+    assign wr_fab_b_emit = wr_fab_b_valid;
+
+    write_guard_clt #(
+      .MaxUniqIds   ( MaxUniqIds   ),
+      .MaxWrTxns    ( MaxWrTxns    ),
+      .hs_cnt_t     ( hs_cnt_t     ),
+      .id_t         ( int_id_t     )
+    ) i_write_guard (
+      .clk_i,
+      .rst_ni,
+      .reset_clear_i        ( reset_clear_i          ),
+      .prescaled_en_i       ( prescaled_en           ),
+      .aw_hs_i              ( aw_hs                  ),
+      .aw_valid_i           ( mgr_req_mon.aw_valid   ),
+      .aw_ready_i           ( sbr_rsp_mon.aw_ready   ),
+      .w_hs_i               ( w_hs                   ),
+      .w_valid_i            ( mgr_req_mon.w_valid    ),
+      .w_ready_i            ( sbr_rsp_mon.w_ready    ),
+      .wlast_i              ( mgr_req_mon.w.last     ),
+      .b_hs_i               ( b_hs                   ),
+      .b_valid_i            ( sbr_rsp_mon.b_valid    ),
+      .b_ready_i            ( mgr_req_mon.b_ready    ),
+      .awid_i               ( mgr_req_mon.aw.id      ),
+      .awlen_i              ( mgr_req_mon.aw.len     ),
+      .bid_i                ( sbr_rsp_mon.b.id       ),
+      .bresp_i              ( sbr_rsp_mon.b.resp     ),
+      .budget_avld_ardy_i   ( budget_avld_ardy       ),
+      .budget_w_liveness_i  ( budget_w_liveness      ),
+      .budget_b_timeout_i   ( budget_b               ),
+      .abort_id_o           ( wr_abort_id            ),
+      .reset_req_o          ( wr_reset_req           ),
+      .timeout_o            ( wr_timeout             ),
+      .evt_ovf_o            ( wr_evt_ovf             ),
+      .evt_ovf_id_o         ( wr_evt_ovf_id          ),
+      .fab_all_req_i        ( wr_fab_all_req         ),
+      .fab_b_valid_o        ( wr_fab_b_valid         ),
+      .fab_b_id_o           ( wr_fab_b_id            ),
+      .fault_pulse_o        ( wr_fault_pulse         ),
+      .fault_phase_o        ( wr_fault_phase         ),
+      .fault_type_o         ( wr_fault_type          )
+    );
+
+    read_guard_clt #(
+      .MaxUniqIds   ( MaxUniqIds   ),
+      .MaxRdTxns    ( MaxRdTxns    ),
+      .hs_cnt_t     ( hs_cnt_t     ),
+      .id_t         ( int_id_t     )
+    ) i_read_guard (
+      .clk_i,
+      .rst_ni,
+      .prescaled_en_i       ( prescaled_en           ),
+      .ar_hs_i              ( ar_hs                  ),
+      .ar_valid_i           ( mgr_req_mon.ar_valid   ),
+      .ar_ready_i           ( sbr_rsp_mon.ar_ready   ),
+      .arid_i               ( mgr_req_mon.ar.id      ),
+      .arlen_i              ( mgr_req_mon.ar.len     ),
+      .r_hs_i               ( r_hs                   ),
+      .r_valid_i            ( sbr_rsp_mon.r_valid    ),
+      .r_ready_i            ( mgr_req_mon.r_ready    ),
+      .r_id_i               ( sbr_rsp_mon.r.id       ),
+      .rlast_i              ( sbr_rsp_mon.r.last     ),
+      .rresp_i              ( sbr_rsp_mon.r.resp     ),
+      .budget_avld_ardy_i   ( budget_avld_ardy       ),
+      .budget_r_liveness_i  ( budget_r_liveness      ),
+      .reset_clear_i        ( reset_clear_i          ),
+      .reset_req_o          ( rd_reset_req           ),
+      .timeout_o            ( rd_timeout             ),
+      .evt_ovf_o            ( rd_evt_ovf             ),
+      .evt_ovf_id_o         ( rd_evt_ovf_id          ),
+      .abort_id_o           ( rd_abort_id            ),
+      .fab_all_req_i        ( rd_fab_all_req         ),
+      .fab_r_valid_o        ( rd_fab_r_valid         ),
+      .fab_r_id_o           ( rd_fab_r_id            ),
+      .fab_r_last_o         ( rd_fab_r_last          ),
+      .fault_pulse_o        ( rd_fault_pulse         ),
+      .fault_phase_o        ( rd_fault_phase         ),
+      .fault_type_o         ( rd_fault_type          )
+    );
+  end
 
   logic first_fault_occurred;
   logic wr_timeout_latched, rd_timeout_latched;
@@ -320,7 +403,7 @@ module axi_tmu_top_ilt
   tmu_dir_t                     fault_dir_latched;
   axi_tmu_pkg::tmu_fault_type_t fault_type_latched;
   int_id_t                      fault_id_latched;
-  tmu_phase_t                       fault_phase_latched;
+  tmu_phase_t                   fault_phase_latched;
 
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
