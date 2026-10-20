@@ -7,16 +7,18 @@
 module axi_tmu_top_ilt
   import axi_tmu_pkg::*;
 #(
+  // Common parameters
+  parameter tmu_mode_e   TmuMode       = ILT_MODE,
   parameter int unsigned MaxUniqIds    = 16,
   parameter int unsigned MaxTxnsPerId  = 2,
   parameter int unsigned MaxWrTxns     = 32,
   parameter int unsigned MaxRdTxns     = 32,
   parameter int unsigned AxiIdWidth    = 6,
-  // Counter width
   parameter int unsigned HsCntWidth    = 4,
+  parameter int unsigned PrescalerDiv  = 1,
+  // ILT parameters (used only when in ILT_MODE)
   parameter int unsigned NumWidth      = (MaxTxnsPerId > 1) ? $clog2(MaxTxnsPerId + 1) : 1,
   parameter int unsigned CntWidth      = 12,
-  parameter int unsigned PrescalerDiv  = 1,
   // Bundles
   parameter type mgr_req_t             = logic,
   parameter type mgr_rsp_t             = logic,
@@ -57,30 +59,61 @@ module axi_tmu_top_ilt
     end
   end
 
-  // Register block
-  axi_tmu_ilt_reg_pkg::axi_tmu_ilt_reg2hw_t reg2hw;
-  axi_tmu_ilt_reg_pkg::axi_tmu_ilt_hw2reg_t hw2reg;
-
-  axi_tmu_ilt_reg_top #(
-    .reg_req_t(cfg_req_t),
-    .reg_rsp_t(cfg_rsp_t)
-  ) i_regs (
-    .clk_i,
-    .rst_ni,
-    .reg_req_i ( cfg_req_i ),
-    .reg_rsp_o ( cfg_rsp_o ),
-    .reg2hw    ( reg2hw    ),
-    .hw2reg    ( hw2reg    ),
-    .devmode_i ( 1'b1      )
-  );
-
-  hs_cnt_t     budget_ax;
+  // Budgets seen by the guards (the ones not used by the selected mode are tied to 0)
+  hs_cnt_t     budget_avld_ardy, budget_w_liveness, budget_r_liveness, budget_b;
   track_cnt_t  budget_b2b;
   logic [11:0] budget_r2r;
 
-  assign budget_ax  = (reg2hw.budget_avld_ardy.q == '0) ? '1 : hs_cnt_t'(reg2hw.budget_avld_ardy.q);
-  assign budget_b2b = (reg2hw.budget_b2b.q       == '0) ? '1 : track_cnt_t'(reg2hw.budget_b2b.q);
-  assign budget_r2r = (reg2hw.budget_r2r.q       == '0) ? '1 : 12'(reg2hw.budget_r2r.q);
+  // Register block
+  if (TmuMode == ILT_MODE) begin : gen_regs_ilt
+    axi_tmu_ilt_reg_pkg::axi_tmu_ilt_reg2hw_t reg2hw;
+    axi_tmu_ilt_reg_pkg::axi_tmu_ilt_hw2reg_t hw2reg;
+
+    axi_tmu_ilt_reg_top #(
+      .reg_req_t(cfg_req_t),
+      .reg_rsp_t(cfg_rsp_t)
+    ) i_regs (
+      .clk_i,
+      .rst_ni,
+      .reg_req_i ( cfg_req_i ),
+      .reg_rsp_o ( cfg_rsp_o ),
+      .reg2hw    ( reg2hw    ),
+      .hw2reg    ( hw2reg    ),
+      .devmode_i ( 1'b1      )
+    );
+
+    assign budget_avld_ardy  = (reg2hw.budget_avld_ardy.q == '0) ? '1 : hs_cnt_t'(reg2hw.budget_avld_ardy.q);
+    assign budget_b2b        = (reg2hw.budget_b2b.q       == '0) ? '1 : track_cnt_t'(reg2hw.budget_b2b.q);
+    assign budget_r2r        = (reg2hw.budget_r2r.q       == '0) ? '1 : 12'(reg2hw.budget_r2r.q);
+    assign budget_w_liveness = '0;
+    assign budget_r_liveness = '0;
+    assign budget_b          = '0;
+  end else if (TmuMode == CLT_MODE) begin : gen_regs_clt
+    axi_tmu_clt_reg_pkg::axi_tmu_clt_reg2hw_t reg2hw;
+    axi_tmu_clt_reg_pkg::axi_tmu_clt_hw2reg_t hw2reg;
+
+    axi_tmu_clt_reg_top #(
+      .reg_req_t(cfg_req_t),
+      .reg_rsp_t(cfg_rsp_t)
+    ) i_regs (
+      .clk_i,
+      .rst_ni,
+      .reg_req_i ( cfg_req_i ),
+      .reg_rsp_o ( cfg_rsp_o ),
+      .reg2hw    ( reg2hw    ),
+      .hw2reg    ( hw2reg    ),
+      .devmode_i ( 1'b1      )
+    );
+
+    assign budget_avld_ardy  = (reg2hw.budget_avld_ardy.q  == '0) ? '1 : hs_cnt_t'(reg2hw.budget_avld_ardy.q);
+    assign budget_w_liveness = (reg2hw.budget_w_liveness.q == '0) ? '1 : hs_cnt_t'(reg2hw.budget_w_liveness.q);
+    assign budget_r_liveness = (reg2hw.budget_r_liveness.q == '0) ? '1 : hs_cnt_t'(reg2hw.budget_r_liveness.q);
+    assign budget_b          = (reg2hw.budget_b.q          == '0) ? '1 : hs_cnt_t'(reg2hw.budget_b.q);
+    assign budget_b2b        = '0;
+    assign budget_r2r        = '0;
+  end else begin : gen_regs_invalid
+    $fatal(1, "axi_tmu_top: only ILT_MODE and CLT_MODE are implemented");
+  end
 
   sbr_req_t remap_req;
   sbr_rsp_t sbr_rsp_isolated;
@@ -192,7 +225,7 @@ module axi_tmu_top_ilt
     .bid_i                ( sbr_rsp_mon.b.id                          ),
     .bresp_i              ( sbr_rsp_mon.b.resp                        ),
     .b_ready_i            ( mgr_req_mon.b_ready && (wlast_done_cnt_q > 0) ),
-    .budget_avld_ardy_i   ( budget_ax                                 ),
+    .budget_avld_ardy_i   ( budget_avld_ardy                          ),
     .budget_b2b_i         ( budget_b2b                                ),
     .abort_id_o           ( wr_abort_id                               ),
     .reset_req_o          ( wr_reset_req                              ),
@@ -228,7 +261,7 @@ module axi_tmu_top_ilt
     .r_last_i             ( sbr_rsp_mon.r.last     ),
     .r_ready_i            ( mgr_req_mon.r_ready    ),
     .rresp_i              ( sbr_rsp_mon.r.resp     ),
-    .budget_avld_ardy_i   ( budget_ax              ),
+    .budget_avld_ardy_i   ( budget_avld_ardy       ),
     .budget_r2r_i         ( budget_r2r             ),
     .reset_req_o          ( rd_reset_req           ),
     .timeout_o            ( rd_timeout             ),
