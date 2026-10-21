@@ -408,6 +408,22 @@ module tb_axi_tmu_clt;
     tb_check(!irq && !rst_stat, "The fault state must clear after reset_clear_i");
     $display("[TB] Recovery checked.");
 
+    // -------------------------------------------------------------------------
+    // End-of-test accounting: every request completed, and exactly the requests
+    // of Phase 2 were answered by the TMU with a fabricated SLVERR
+    // -------------------------------------------------------------------------
+    $display("[TB] Scoreboard: %0d W beats, %0d R beats | B: %0d OKAY, %0d SLVERR | RLAST: %0d OKAY, %0d SLVERR",
+             total_w_beats, total_r_beats, okay_b_cnt, slverr_b_cnt, okay_rlast_cnt, slverr_rlast_cnt);
+    tb_check(okay_b_cnt + slverr_b_cnt == TbNumReqP1 + TbNumReqP2, "Missing write completions");
+    tb_check(okay_rlast_cnt + slverr_rlast_cnt == TbNumReqP1 + TbNumReqP2, "Missing read completions");
+    tb_check(slverr_b_cnt == TbNumReqP2 && slverr_rlast_cnt == TbNumReqP2,
+             "Expected one fabricated SLVERR for each write and each read of Phase 2");
+
+    if (tb_errors != 0) begin
+      $fatal(1, "[TB] FAILED: %0d check(s) failed", tb_errors);
+    end
+    $display("[TB] %s PASSED: all checks succeeded.", TbMode.name());
+
     end_of_sim <= 1'b1;
     repeat (10) @(posedge clk);
     $finish();
