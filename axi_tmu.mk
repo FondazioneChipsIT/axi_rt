@@ -77,12 +77,24 @@ tmu-sim-init: $(TMU_VSIM_DIR)/compile.tmu.tcl
 tmu-build: tmu-sim-init
 	cd $(TMU_VSIM_DIR) && $(QUESTA) vsim -c -do "quit -code [source $(TMU_VSIM_DIR)/compile.tmu.tcl]"
 
+# Questa exits with status 0 even after a $fatal, so the verdict is read from the
+# transcript: the run fails if it reports errors (the testbench verdict, the
+# assertions of the AXI library and of the design all count) or does not reach the
+# end-of-simulation summary.
 tmu-sim:
-	cd $(TMU_VSIM_DIR) && $(QUESTA) vsim $(VSIM_FLAGS) -do \
+	rm -f $(TMU_VSIM_DIR)/transcript && cd $(TMU_VSIM_DIR) && $(QUESTA) vsim $(VSIM_FLAGS) -do \
 		"set TESTBENCH $(TBENCH); \
 		 set VSIM_FLAGS \"$(VSIM_FLAGS)\"; \
 		 source $(TMU_VSIM_SRC)/start.tmu.tcl ; \
 		 $(RUN_AND_EXIT)"
+	@log=$(TMU_VSIM_DIR)/transcript; \
+	errs=$$(sed -n 's/^# Errors: \([0-9]*\),.*/\1/p' $$log 2>/dev/null | tail -n 1); \
+	if [ -z "$$errs" ]; then \
+	  echo "tmu-sim: FAILED, no end-of-simulation summary in $$log"; exit 1; \
+	elif [ "$$errs" -ne 0 ] || grep -q '^# \*\* Fatal' $$log; then \
+	  echo "tmu-sim: FAILED, $$errs error(s) reported, see $$log"; exit 1; \
+	fi; \
+	echo "tmu-sim: no errors reported in $$log"
 
 #################################
 # Phonies #

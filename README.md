@@ -188,11 +188,14 @@ points to keep in mind until then:
 - `axi_tmu.mk` defaults to `QUESTA ?= questa-2023.4`, a wrapper command that does
   not exist on every machine. With the module loaded by `bootstrap.sh`, `vsim` is
   already in `PATH`, so pass an empty value: `make tmu-build QUESTA=`.
-- `make tmu-sim` always exits with status 0, even when the testbench ends with a
-  `$fatal`. A passing run ends with `[TB] ILT_MODE PASSED` or `[TB] CLT_MODE PASSED`,
-  `# Errors: 0` and no `** Error` / `** Fatal` lines. That verdict only covers the
-  checks of the testbench: also read the `# Errors:` count, which includes the
-  assertions of the AXI library and of the design.
+- Questa exits with status 0 even after a `$fatal`, so `make tmu-sim` reads the
+  `transcript` once the simulation is over and fails if it reports errors
+  (`# Errors:` other than 0, or a `** Fatal` line) or has no end-of-simulation
+  summary. The errors include the `$fatal` of the testbench and the assertions of
+  the AXI library and of the design, which do not change the testbench verdict.
+  The make output only tells that the run failed: the reason is in
+  `build/vsim/<TBENCH>/transcript`. A passing run ends with `[TB] ILT_MODE PASSED`
+  or `[TB] CLT_MODE PASSED` and `# Errors: 0`.
 
 ## Troubleshooting
 
