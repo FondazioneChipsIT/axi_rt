@@ -19,20 +19,25 @@ module tb_axi_tmu_clt;
   parameter int unsigned TbMaxWrTxns     = 32;
   parameter int unsigned TbMaxRdTxns     = 32;
 
-  parameter int unsigned TbCounterWidth  = 10;
+  parameter int unsigned TbCounterWidth  = 12;
   parameter int unsigned TbHsCntWidth    = 8;
   parameter int unsigned TbPrescalerDiv  = 1;
+
   // AXI parameters
   parameter int unsigned TbAxiAddrWidth  = 32;
   parameter int unsigned TbAxiDataWidth  = 32;
   parameter int unsigned TbAxiIdWidth    = 6;
   parameter int unsigned TbAxiIntIdWidth = (TbMaxUniqIds > 1) ? $clog2(TbMaxUniqIds) : 1;
   parameter int unsigned TbAxiUserWidth  = 1;
-  parameter int unsigned TbAxiLogDepth   = 1;
 
   parameter bit TbEnAtop                 = 1'b0;
   parameter bit TbEnExcl                 = 1'b0;
   parameter bit TbUniqueIds              = 1'b0;
+
+  // Longest burst of the random manager, in beats. With TbPrescalerDiv 1 the ILT
+  // budget of a whole write (budget_b2b, an 8-bit register) is 255 cycles at most,
+  // so longer bursts would raise false timeouts.
+  parameter int unsigned TbMaxBurstLen   = 16;
 
   // Testbench timing
   localparam time CyclTime               = 10ns;
@@ -141,7 +146,7 @@ module tb_axi_tmu_clt;
   `AXI_TYPEDEF_AR_CHAN_T(ar_chan_t, addr_t, id_t, user_t);
   `AXI_TYPEDEF_R_CHAN_T(r_chan_t, data_t, id_t, user_t);
   `AXI_TYPEDEF_REQ_T(mgr_req_t, aw_chan_t, w_chan_t, ar_chan_t);
-  `AXI_TYPEDEF_RESP_T(mgr_resp_t, b_chan_t, r_chan_t );
+  `AXI_TYPEDEF_RESP_T(mgr_rsp_t, b_chan_t, r_chan_t );
 
   `AXI_TYPEDEF_AW_CHAN_T(int_aw_t, addr_t, int_id_t, user_t);
   `AXI_TYPEDEF_W_CHAN_T(w_t, data_t, strb_t, user_t);
@@ -149,12 +154,12 @@ module tb_axi_tmu_clt;
   `AXI_TYPEDEF_AR_CHAN_T(int_ar_t, addr_t, int_id_t, user_t);
   `AXI_TYPEDEF_R_CHAN_T(int_r_t, data_t, int_id_t, user_t);
   `AXI_TYPEDEF_REQ_T(sbr_req_t, int_aw_t, w_t, int_ar_t);
-  `AXI_TYPEDEF_RESP_T(sbr_resp_t, int_b_t, int_r_t );
+  `AXI_TYPEDEF_RESP_T(sbr_rsp_t, int_b_t, int_r_t );
 
   mgr_req_t  mgr_req;
-  mgr_resp_t mgr_rsp;
+  mgr_rsp_t mgr_rsp;
   sbr_req_t  sbr_req;
-  sbr_resp_t sbr_rsp;
+  sbr_rsp_t sbr_rsp;
 
   `AXI_ASSIGN (mgr_bus, mgr_bus_dv)
   `AXI_ASSIGN_TO_REQ(mgr_req, mgr_bus)
@@ -218,22 +223,40 @@ module tb_axi_tmu_clt;
     .rst_no       ( rst_n    )
   );
 
+  // ---------------------------------------------------------------------------
+  // Implementation under test: the only part that differs between
+  // tb_axi_tmu_ilt and tb_axi_tmu_clt
+  // ---------------------------------------------------------------------------
+  localparam tmu_mode_e   TbMode         = CLT_MODE;
+  localparam logic [31:0] TbFaultLogAddr = 32'h0000_0014;
+  // rst_req_o expected after a completion timeout: CLT also requests the reset
+  localparam bit          TbExpRstReq    = 1'b1;
+
+  // Budgets, in cycles as TbPrescalerDiv is 1
+  task automatic configure_budgets(reg_drv_t reg_drv);
+    reg_drv.send_write(32'h0000_0000, 32'h0000_0010, 4'hf, reg_error); // budget_avld_ardy
+    reg_drv.send_write(32'h0000_0004, 32'h0000_00ff, 4'hf, reg_error); // budget_w_liveness
+    reg_drv.send_write(32'h0000_0008, 32'h0000_0020, 4'hf, reg_error); // budget_b
+    reg_drv.send_write(32'h0000_000c, 32'h0000_00ff, 4'hf, reg_error); // budget_r_liveness
+  endtask
+
   //-----------------------------------
-  // DUT (CLT Top)
+  // DUT
   //-----------------------------------
   axi_tmu_top #(
-    .TmuMode      ( CLT_MODE       ),
+    .TmuMode      ( TbMode         ),
     .MaxUniqIds   ( TbMaxUniqIds   ),
     .MaxTxnsPerId ( TbMaxTxnsPerId ),
     .MaxWrTxns    ( TbMaxWrTxns    ),
     .MaxRdTxns    ( TbMaxRdTxns    ),
     .AxiIdWidth   ( TbAxiIdWidth   ),
     .HsCntWidth   ( TbHsCntWidth   ),
+    .CntWidth     ( TbCounterWidth ),
     .PrescalerDiv ( TbPrescalerDiv ),
     .mgr_req_t    ( mgr_req_t      ),
-    .mgr_rsp_t    ( mgr_resp_t     ),
+    .mgr_rsp_t    ( mgr_rsp_t      ),
     .sbr_req_t    ( sbr_req_t      ),
-    .sbr_rsp_t    ( sbr_resp_t     ),
+    .sbr_rsp_t    ( sbr_rsp_t      ),
     .cfg_req_t    ( cfg_req_t      ),
     .cfg_rsp_t    ( cfg_rsp_t      )
   ) i_axi_tmu (
@@ -250,9 +273,6 @@ module tb_axi_tmu_clt;
     .reset_clear_i  ( reset_clear  )
   );
 
-  // -------------------------------
-  // AXI Rand Mgr, Sbr & Test Sequence
-  // -------------------------------
   logic end_of_sim;
   logic tmu_config;
   axi_rand_mgr_t axi_rand_mgr;
@@ -271,6 +291,7 @@ module tb_axi_tmu_clt;
     logic [31:0] rdata;
 
     axi_rand_mgr = new(mgr_bus_dv);
+    axi_rand_mgr.max_len = 8'(TbMaxBurstLen - 1);
     end_of_sim   <= 1'b0;
     tmu_config   <= 1'b0;
     reg_error    <= 1'b0;
@@ -284,12 +305,9 @@ module tb_axi_tmu_clt;
     @(posedge clk);
 
     // -------------------------------------------------------------------------
-    // Configure 4 CLT Budgets via REG_BUS (Offsets 0x00, 0x04, 0x08, 0x0c)
+    // Configure the budgets of the TMU via REG_BUS
     // -------------------------------------------------------------------------
-    reg_drv.send_write(32'h0000_0000, 32'h0000_0010, 4'hf, reg_error); // budget_avld_ardy
-    reg_drv.send_write(32'h0000_0004, 32'h0000_00ff, 4'hf, reg_error); // budget_w_liveness
-    reg_drv.send_write(32'h0000_0008, 32'h0000_0020, 4'hf, reg_error); // budget_b
-    reg_drv.send_write(32'h0000_000c, 32'h0000_00ff, 4'hf, reg_error); // budget_r_liveness
+    configure_budgets(reg_drv);
 
     tmu_config <= 1'b1;
     repeat (5) @(posedge clk);
@@ -315,10 +333,10 @@ module tb_axi_tmu_clt;
     axi_rand_mgr.run(4, 4);
     repeat (10) @(posedge clk);
 
-    assert (irq && rst_stat)
-      else $error("[TB] Expected fault_o (irq) and rst_req_o (rst_stat) on CLT timeout!");
+    assert (irq && rst_stat == TbExpRstReq)
+      else $error("[TB] Unexpected fault_o/rst_req_o after the completion timeout (rst_req_o expected: %0b)", TbExpRstReq);
 
-    reg_drv.send_read(32'h0000_0014, rdata, reg_error); // Read fault_log CSR (0x14 in CLT)
+    reg_drv.send_read(TbFaultLogAddr, rdata, reg_error);
     $display("[TB] CLT Cut-and-Drain Completed! fault_log CSR = 0x%08x (valid=%0b, type=%0d, dir=%0b, phase=%0d)",
              rdata, rdata[0], rdata[3:1], rdata[4], rdata[8:5]);
 

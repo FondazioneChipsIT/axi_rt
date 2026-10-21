@@ -13,6 +13,7 @@ module tb_axi_tmu_ilt;
   import axi_pkg::*;
   import axi_tmu_pkg::*;
 
+  // TMU parameters
   parameter int unsigned TbMaxUniqIds    = 16;
   parameter int unsigned TbMaxTxnsPerId  = 64;
   parameter int unsigned TbMaxWrTxns     = 32;
@@ -20,8 +21,9 @@ module tb_axi_tmu_ilt;
 
   parameter int unsigned TbCounterWidth  = 12;
   parameter int unsigned TbHsCntWidth    = 8;
-  parameter int unsigned TbPrescalerDiv  = 16;
+  parameter int unsigned TbPrescalerDiv  = 1;
 
+  // AXI parameters
   parameter int unsigned TbAxiAddrWidth  = 32;
   parameter int unsigned TbAxiDataWidth  = 32;
   parameter int unsigned TbAxiIdWidth    = 6;
@@ -32,6 +34,12 @@ module tb_axi_tmu_ilt;
   parameter bit TbEnExcl                 = 1'b0;
   parameter bit TbUniqueIds              = 1'b0;
 
+  // Longest burst of the random manager, in beats. With TbPrescalerDiv 1 the ILT
+  // budget of a whole write (budget_b2b, an 8-bit register) is 255 cycles at most,
+  // so longer bursts would raise false timeouts.
+  parameter int unsigned TbMaxBurstLen   = 16;
+
+  // Testbench timing
   localparam time CyclTime               = 10ns;
   localparam time ApplTime               = 2ns;
   localparam time TestTime               = 8ns;
@@ -215,7 +223,27 @@ module tb_axi_tmu_ilt;
     .rst_no       ( rst_n    )
   );
 
+  // ---------------------------------------------------------------------------
+  // Implementation under test: the only part that differs between
+  // tb_axi_tmu_ilt and tb_axi_tmu_clt
+  // ---------------------------------------------------------------------------
+  localparam tmu_mode_e   TbMode         = ILT_MODE;
+  localparam logic [31:0] TbFaultLogAddr = 32'h0000_0010;
+  // rst_req_o expected after a completion timeout: ILT only raises fault_o
+  localparam bit          TbExpRstReq    = 1'b0;
+
+  // Budgets, in cycles as TbPrescalerDiv is 1
+  task automatic configure_budgets(reg_drv_t reg_drv);
+    reg_drv.send_write(32'h0000_0000, 32'h0000_0020, 4'hf, reg_error); // budget_avld_ardy
+    reg_drv.send_write(32'h0000_0004, 32'h0000_00ff, 4'hf, reg_error); // budget_b2b (8-bit register)
+    reg_drv.send_write(32'h0000_0008, 32'h0000_0fff, 4'hf, reg_error); // budget_r2r (12-bit register)
+  endtask
+
+  //-----------------------------------
+  // DUT
+  //-----------------------------------
   axi_tmu_top #(
+    .TmuMode      ( TbMode         ),
     .MaxUniqIds   ( TbMaxUniqIds   ),
     .MaxTxnsPerId ( TbMaxTxnsPerId ),
     .MaxWrTxns    ( TbMaxWrTxns    ),
@@ -265,9 +293,9 @@ module tb_axi_tmu_ilt;
   initial begin
     automatic reg_drv_t reg_drv = new(reg_bus);
     logic [31:0] rdata;
-    int unsigned p1_b_err, p1_r_err;
 
     axi_rand_mgr = new(mgr_bus_dv);
+    axi_rand_mgr.max_len = 8'(TbMaxBurstLen - 1);
     end_of_sim   <= 1'b0;
     tmu_config   <= 1'b0;
     reg_error    <= 1'b0;
@@ -281,11 +309,9 @@ module tb_axi_tmu_ilt;
     @(posedge clk);
 
     // -------------------------------------------------------------------------
-    // Configure Generous ILT Budgets (supporting 8 xbar congestion + 12-bit counters)
+    // Configure the budgets of the TMU via REG_BUS
     // -------------------------------------------------------------------------
-    reg_drv.send_write(32'h0000_0000, 32'h0000_0020, 4'hf, reg_error); // budget_avld_ardy (32 cycles)
-    reg_drv.send_write(32'h0000_0004, 32'h0000_0fff, 4'hf, reg_error); // budget_b2b (4096 cycles)
-    reg_drv.send_write(32'h0000_0008, 32'h0000_0fff, 4'hf, reg_error); // budget_r2r (4096 cycles)
+    configure_budgets(reg_drv);
 
     tmu_config <= 1'b1;
     repeat (5) @(posedge clk);
@@ -298,11 +324,9 @@ module tb_axi_tmu_ilt;
     repeat (20) @(posedge clk);
 
     if (irq || rst_stat) begin
-      reg_drv.send_read(32'h0000_0010, rdata, reg_error);
+      reg_drv.send_read(TbFaultLogAddr, rdata, reg_error);
       $fatal(1, "[TB] False fault detected in Phase 1! fault_log=0x%08x irq=%0b rst_stat=%0b", rdata, irq, rst_stat);
     end
-    p1_b_err = slverr_b_cnt;
-    p1_r_err = slverr_rlast_cnt;
     $display("[TB] ILT Phase 1 Passed cleanly!");
 
     // -------------------------------------------------------------------------
@@ -326,10 +350,10 @@ module tb_axi_tmu_ilt;
       end
     join
 
-    assert (irq && !rst_stat)
-      else $error("[TB] ILT completion timeout must assert irq=1 without requesting reset (rst_stat=0)");
+    assert (irq && rst_stat == TbExpRstReq)
+      else $error("[TB] Unexpected fault_o/rst_req_o after the completion timeout (rst_req_o expected: %0b)", TbExpRstReq);
 
-    reg_drv.send_read(32'h0000_0010, rdata, reg_error);
+    reg_drv.send_read(TbFaultLogAddr, rdata, reg_error);
     $display("[TB] ILT Cut-and-Drain Completed! fault_log CSR = 0x%08x (valid=%0b, type=%0d, dir=%0b, phase=%0d)",
              rdata, rdata[0], rdata[3:1], rdata[4], rdata[8:5]);
 
