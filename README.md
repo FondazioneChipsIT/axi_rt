@@ -173,8 +173,13 @@ The simulation flow (`make tmu-build`, `make tmu-sim`, defined in `axi_tmu.mk`)
 is **not covered by `bootstrap.sh` yet** and is going to be reworked. Known
 points to keep in mind until then:
 
-- The testbench is chosen with `TBENCH` (default `tb_axi_tmu_ilt`, in
-  `test/tb_axi_tmu_ilt.sv`).
+- The testbench is chosen with `TBENCH`: `tb_axi_tmu_ilt` (default, in
+  `test/tb_axi_tmu_ilt.sv`) runs the top in `ILT_MODE`, `tb_axi_tmu_clt` (in
+  `test/tb_axi_tmu_clt.sv`) runs it in `CLT_MODE`. For example:
+  `make -B tmu-build tmu-sim QUESTA= TBENCH=tb_axi_tmu_clt`. The name of the
+  testbench is written in the generated `target/sim/vsim/compile.tmu.tcl`, which
+  `make` only regenerates when `Bender.yml` changes: use `-B` on `tmu-build`
+  every time `TBENCH` changes.
 - `axi_tmu.mk` defaults to `QUESTA ?= questa-2023.4`, a wrapper command that does
   not exist on every machine. With the module loaded by `bootstrap.sh`, `vsim` is
   already in `PATH`, so pass an empty value: `make tmu-build QUESTA=`.
