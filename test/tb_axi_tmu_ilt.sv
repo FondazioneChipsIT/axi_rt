@@ -239,6 +239,11 @@ module tb_axi_tmu_ilt;
     reg_drv.send_write(32'h0000_0008, 32'h0000_0fff, 4'hf, reg_error); // budget_r2r (12-bit register)
   endtask
 
+  // Direction and phase of the fault_log of a completion timeout (B or R never comes)
+  function automatic bit is_completion_phase(input bit is_write, input logic [3:0] phase);
+    return is_write ? (phase == 4'(PH_ILT_B)) : (phase == 4'(PH_ILT_R));
+  endfunction
+
   //-----------------------------------
   // DUT
   //-----------------------------------
@@ -276,11 +281,27 @@ module tb_axi_tmu_ilt;
   logic tmu_config;
   axi_rand_mgr_t axi_rand_mgr;
   axi_rand_sbr_t axi_rand_sbr;
-  
+
+  // Stimulus and bounds
+  localparam int unsigned TbNumReqP1       = 9;      // reads and writes of Phase 1
+  localparam int unsigned TbNumReqP2       = 4;      // reads and writes of Phase 2
+  localparam int unsigned TbDetectCycles   = 25000;  // the TMU must raise fault_o within this
+  localparam int unsigned TbWatchdogCycles = 200000; // the whole test must end within this
+
   // Scoreboard counters declared at module scope
   int unsigned okay_b_cnt     = 0, slverr_b_cnt     = 0;
   int unsigned okay_rlast_cnt = 0, slverr_rlast_cnt = 0;
   int unsigned total_r_beats  = 0, total_w_beats    = 0;
+
+  // Number of failed checks; the verdict at the end of the test depends on it
+  int unsigned tb_errors = 0;
+
+  task automatic tb_check(input bit cond, input string msg);
+    if (!cond) begin
+      tb_errors++;
+      $error("[TB] %s", msg);
+    end
+  endtask
 
   initial begin
     axi_rand_sbr = new(sbr_bus_xbar_dv);
@@ -288,6 +309,14 @@ module tb_axi_tmu_ilt;
     @(posedge rst_n);
     wait(tmu_config);
     axi_rand_sbr.run();
+  end
+
+  // A stuck test (e.g. a manager that waits for a response that never comes) must
+  // end with a failure instead of hanging
+  initial begin
+    @(posedge rst_n);
+    repeat (TbWatchdogCycles) @(posedge clk);
+    $fatal(1, "[TB] Watchdog: the test did not end within %0d cycles", TbWatchdogCycles);
   end
 
   initial begin
@@ -317,45 +346,55 @@ module tb_axi_tmu_ilt;
     repeat (5) @(posedge clk);
 
     // -------------------------------------------------------------------------
-    // Phase 1: Fault-Free Normal Traffic (9 Reads, 9 Writes)
+    // Phase 1: Fault-Free Normal Traffic
     // -------------------------------------------------------------------------
-    $display("[TB] Starting ILT Phase 1: Normal Traffic (9 Reads, 9 Writes)...");
-    axi_rand_mgr.run(9, 9);
+    $display("[TB] %s Phase 1: normal traffic (%0d reads, %0d writes)...", TbMode.name(), TbNumReqP1, TbNumReqP1);
+    axi_rand_mgr.run(TbNumReqP1, TbNumReqP1);
     repeat (20) @(posedge clk);
 
     if (irq || rst_stat) begin
       reg_drv.send_read(TbFaultLogAddr, rdata, reg_error);
       $fatal(1, "[TB] False fault detected in Phase 1! fault_log=0x%08x irq=%0b rst_stat=%0b", rdata, irq, rst_stat);
     end
-    $display("[TB] ILT Phase 1 Passed cleanly!");
+    tb_check(okay_b_cnt == TbNumReqP1 && slverr_b_cnt == 0,
+             "Phase 1: every write must complete with OKAY and none with SLVERR");
+    tb_check(okay_rlast_cnt == TbNumReqP1 && slverr_rlast_cnt == 0,
+             "Phase 1: every read must complete with OKAY and none with SLVERR");
+    $display("[TB] Phase 1 passed: no false timeouts.");
 
     // -------------------------------------------------------------------------
     // Phase 2: Fault Injection (Subordinate B/R Hang) & Bounded Detection
     // -------------------------------------------------------------------------
-    $display("[TB] Starting ILT Phase 2: Injecting Subordinate Hang (forcing b_valid=0, r_valid=0)...");
+    $display("[TB] %s Phase 2: injecting subordinate hang (forcing b_valid=0, r_valid=0)...", TbMode.name());
     force sbr_rsp.b_valid = 1'b0;
     force sbr_rsp.r_valid = 1'b0;
 
     fork
-      axi_rand_mgr.run(4, 4);
+      axi_rand_mgr.run(TbNumReqP2, TbNumReqP2);
       begin
         fork
           wait (irq);
           begin
-            repeat (25000) @(posedge clk);
-            $fatal(1, "[TB] Timeout: ILT failed to detect subordinate hang!");
+            repeat (TbDetectCycles) @(posedge clk);
+            $fatal(1, "[TB] Timeout: the TMU failed to detect the subordinate hang!");
           end
         join_any
         disable fork;
       end
     join
 
-    assert (irq && rst_stat == TbExpRstReq)
-      else $error("[TB] Unexpected fault_o/rst_req_o after the completion timeout (rst_req_o expected: %0b)", TbExpRstReq);
+    tb_check(irq, "A completion timeout must assert fault_o");
+    tb_check(rst_stat == TbExpRstReq,
+             $sformatf("rst_req_o must be %0b after a completion timeout", TbExpRstReq));
 
     reg_drv.send_read(TbFaultLogAddr, rdata, reg_error);
-    $display("[TB] ILT Cut-and-Drain Completed! fault_log CSR = 0x%08x (valid=%0b, type=%0d, dir=%0b, phase=%0d)",
-             rdata, rdata[0], rdata[3:1], rdata[4], rdata[8:5]);
+    $display("[TB] Cut-and-drain completed: fault_log CSR = 0x%08x (valid=%0b, type=%0d, dir=%0b, phase=%0d, id=%0d)",
+             rdata, rdata[0], rdata[3:1], rdata[4], rdata[8:5], rdata[24:9]);
+    tb_check(rdata[0] == 1'b1, "fault_log: valid must be set");
+    tb_check(rdata[3:1] == 3'(TMU_FLT_TIMEOUT), "fault_log: the type must be TIMEOUT");
+    tb_check(is_completion_phase(rdata[4], rdata[8:5]),
+             "fault_log: direction and phase do not match a completion timeout");
+    tb_check(rdata[24:9] < TbMaxUniqIds, "fault_log: the id is out of range");
 
     // Release hang and clear fault state
     release sbr_rsp.b_valid;
@@ -365,9 +404,8 @@ module tb_axi_tmu_ilt;
     reset_clear <= 1'b0;
     repeat (5) @(posedge clk);
 
-    assert (!irq && !rst_stat)
-      else $error("[TB] Expected ILT fault state to clear after reset_clear_i!");
-    $display("[TB] ILT Recovery verified! All tests passed.");
+    tb_check(!irq && !rst_stat, "The fault state must clear after reset_clear_i");
+    $display("[TB] Recovery checked.");
 
     end_of_sim <= 1'b1;
     repeat (10) @(posedge clk);
@@ -379,7 +417,9 @@ module tb_axi_tmu_ilt;
   // ---------------------------------------------------------------------------
   always @(posedge clk) begin
     if (rst_n) begin
-      if (mgr_req.w_valid && mgr_rsp.w_ready) total_w_beats++;
+      if (mgr_req.w_valid && mgr_rsp.w_ready) begin
+        total_w_beats++;
+      end
       if (mgr_rsp.b_valid && mgr_req.b_ready) begin
         if (mgr_rsp.b.resp == axi_pkg::RESP_OKAY)   okay_b_cnt++;
         if (mgr_rsp.b.resp == axi_pkg::RESP_SLVERR) slverr_b_cnt++;
