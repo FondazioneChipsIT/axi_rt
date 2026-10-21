@@ -9,7 +9,7 @@
 `include "register_interface/assign.svh"
 `include "register_interface/typedef.svh"
 
-module tb_axi_tmu;
+module tb_axi_tmu_ilt;
   import axi_pkg::*;
   import axi_tmu_pkg::*;
 

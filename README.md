@@ -173,6 +173,8 @@ The simulation flow (`make tmu-build`, `make tmu-sim`, defined in `axi_tmu.mk`)
 is **not covered by `bootstrap.sh` yet** and is going to be reworked. Known
 points to keep in mind until then:
 
+- The testbench is chosen with `TBENCH` (default `tb_axi_tmu_ilt`, in
+  `test/tb_axi_tmu_ilt.sv`).
 - `axi_tmu.mk` defaults to `QUESTA ?= questa-2023.4`, a wrapper command that does
   not exist on every machine. With the module loaded by `bootstrap.sh`, `vsim` is
   already in `PATH`, so pass an empty value: `make tmu-build QUESTA=`.

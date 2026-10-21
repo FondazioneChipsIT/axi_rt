@@ -52,10 +52,10 @@ sources:
     files:
       - /usr/pack/gf-12-kgf/arm/gf/12lpplus/sc7p5mcpp84_base_lvt_c18/r5p0/verilog/sc7p5mcpp84_12lpplus_base_lvt_c18.v
       - monitor-synth/synopsys/out/tmu_wrap_sspg_0p72v_125c_1ns/netlist_tmu_wrap.v
-      - test/tb_axi_tmu.sv
+      - test/tb_axi_tmu_ilt.sv
 
   - target: tmu_test
     files:
        # Level 0
       - src/rtl/axi_tmu_pkg.sv
-      - test/tb_axi_tmu.sv
+      - test/tb_axi_tmu_ilt.sv
