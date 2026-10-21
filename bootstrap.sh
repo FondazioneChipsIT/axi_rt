@@ -49,6 +49,12 @@ _bs_load_module() {
     if module load "$mod" 2>/dev/null && command -v "$cmd" >/dev/null 2>&1; then
         return 0
     fi
+    # A module can be listed as loaded while its PATH entry is gone (for instance
+    # restored by a venv deactivation): `module load` is then a no-op, so reload it.
+    module unload "$mod" 2>/dev/null
+    if module load "$mod" 2>/dev/null && command -v "$cmd" >/dev/null 2>&1; then
+        return 0
+    fi
     # The site module trees may be missing from MODULEPATH: add them and retry once.
     _bs_module_init || return 1
     module load "$mod" && command -v "$cmd" >/dev/null 2>&1
@@ -96,6 +102,14 @@ _axi_tmu_bootstrap() {
         return 1
     fi
 
+    # 0. Leave any active venv --------------------------------------------------
+    # This must come before loading the modules: deactivating restores the PATH
+    # saved when the venv was activated, which would drop the module paths added
+    # in the meantime. It also lets setup_env.py rebuild .venv from scratch.
+    if [ -n "${VIRTUAL_ENV:-}" ] && [ "$(type -t deactivate 2>/dev/null)" = function ]; then
+        deactivate
+    fi
+
     # 1. Modules ---------------------------------------------------------------
     if ! type module >/dev/null 2>&1 && ! _bs_module_init; then
         _bs_err "the 'module' command is not available on this machine."
@@ -107,10 +121,6 @@ _axi_tmu_bootstrap() {
     _bs_note_newer "$questa_mod"
 
     # 2. Python virtual environment --------------------------------------------
-    # Leave any active venv first: setup_env.py may rebuild .venv from scratch.
-    if [ -n "${VIRTUAL_ENV:-}" ] && type deactivate >/dev/null 2>&1; then
-        deactivate
-    fi
     py="$(_bs_find_python)" || { _bs_err "no Python >= 3.8 found (set PYTHON=/path/to/python3.x)"; return 1; }
     "$py" "$root/setup_env.py" || { _bs_err "setup_env.py failed"; return 1; }
     # shellcheck disable=SC1091
