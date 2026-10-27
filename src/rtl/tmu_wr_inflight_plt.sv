@@ -5,7 +5,7 @@
 // Chaoqun Liang <chaoqun.liang@unibo.it>
 
 module tmu_wr_inflight_plt
-  import axi_tmu_pkg_plt::*;
+  import axi_tmu_pkg::*;
 #(
   parameter int unsigned MaxWrTxns    = 1,
   parameter int unsigned HtCapacity   = 1,

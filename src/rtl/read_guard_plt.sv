@@ -5,7 +5,7 @@
 // Chaoqun Liang <chaoqun.liang@unibo.it>
 
 module read_guard_plt
-  import axi_tmu_pkg_plt::*;
+  import axi_tmu_pkg::*;
 #(
   parameter int unsigned MaxUniqIds    = 32,
   parameter int unsigned MaxRdTxns     = 32,
@@ -58,8 +58,8 @@ module read_guard_plt
 
   // Fault reporting
   output logic                        fault_pulse_o,
-  output axi_tmu_pkg_plt::tmu_phase_t     fault_phase_o,
-  output axi_tmu_pkg_plt::tmu_fault_type_t fault_type_o
+  output axi_tmu_pkg::tmu_phase_plt_t     fault_phase_o,
+  output axi_tmu_pkg::tmu_fault_type_t fault_type_o
 );
 
   localparam int HtCapacity            = (MaxUniqIds <= MaxRdTxns) ? MaxUniqIds : MaxRdTxns;
@@ -98,7 +98,7 @@ module read_guard_plt
   logic timeout_ar, reset_ar;
   id_t  abort_id_ar;
 
-  sticky_plt i_arvalid_sticky (
+  tmu_sticky i_arvalid_sticky (
     .clk_i,
     .rst_ni,
     .release_i ( prescaled_en_i  ),
@@ -106,7 +106,7 @@ module read_guard_plt
     .sticky_o  ( ar_valid_sticky )
   );
 
-  sticky_plt i_arready_sticky (
+  tmu_sticky i_arready_sticky (
     .clk_i,
     .rst_ni,
     .release_i ( prescaled_en_i  ),
@@ -114,7 +114,7 @@ module read_guard_plt
     .sticky_o  ( ar_ready_sticky )
   );
 
-  tmu_hs_counter_plt #(
+  tmu_hs_counter #(
     .hs_cnt_t ( hs_cnt_t ),
     .id_t     ( id_t     )
   ) i_ar_prehs (
@@ -266,44 +266,44 @@ module read_guard_plt
   always_comb begin
     abort_id_o    = '0;
     fault_pulse_o = 1'b0;
-    fault_phase_o = axi_tmu_pkg_plt::PH_NONE;
-    fault_type_o  = axi_tmu_pkg_plt::TMU_FLT_NONE;
+    fault_phase_o = axi_tmu_pkg::PH_PLT_NONE;
+    fault_type_o  = axi_tmu_pkg::TMU_FLT_NONE;
 
     if (timeout_ar) begin
       abort_id_o    = abort_id_ar;
       fault_pulse_o = 1'b1;
-      fault_phase_o = axi_tmu_pkg_plt::PH_AR;
-      fault_type_o  = axi_tmu_pkg_plt::TMU_FLT_TIMEOUT;
+      fault_phase_o = axi_tmu_pkg::PH_PLT_AR;
+      fault_type_o  = axi_tmu_pkg::TMU_FLT_TIMEOUT;
     end else if (timeout_stage2) begin
       abort_id_o    = timeout_id_stage2;
       fault_pulse_o = 1'b1;
-      fault_phase_o = axi_tmu_pkg_plt::PH_RHEAD;
-      fault_type_o  = axi_tmu_pkg_plt::TMU_FLT_TIMEOUT;
+      fault_phase_o = axi_tmu_pkg::PH_PLT_RHEAD;
+      fault_type_o  = axi_tmu_pkg::TMU_FLT_TIMEOUT;
     end else if (timeout_stage3) begin
       abort_id_o    = timeout_id_stage3;
       fault_pulse_o = 1'b1;
-      fault_phase_o = axi_tmu_pkg_plt::PH_RV2RR;
-      fault_type_o  = axi_tmu_pkg_plt::TMU_FLT_TIMEOUT;
+      fault_phase_o = axi_tmu_pkg::PH_PLT_RV2RR;
+      fault_type_o  = axi_tmu_pkg::TMU_FLT_TIMEOUT;
     end else if (timeout_stage4) begin
       abort_id_o    = timeout_id_stage4;
       fault_pulse_o = 1'b1;
-      fault_phase_o = axi_tmu_pkg_plt::PH_RDATA;
-      fault_type_o  = axi_tmu_pkg_plt::TMU_FLT_TIMEOUT;
+      fault_phase_o = axi_tmu_pkg::PH_PLT_RDATA;
+      fault_type_o  = axi_tmu_pkg::TMU_FLT_TIMEOUT;
     end else if (proto_err) begin
       abort_id_o    = abort_id_proto;
       fault_pulse_o = 1'b1;
-      fault_phase_o = axi_tmu_pkg_plt::PH_RDATA;
-      fault_type_o  = axi_tmu_pkg_plt::TMU_FLT_PROTO;
+      fault_phase_o = axi_tmu_pkg::PH_PLT_RDATA;
+      fault_type_o  = axi_tmu_pkg::TMU_FLT_PROTO;
     end else if (slverr_r) begin
       abort_id_o    = r_id_i;
       fault_pulse_o = 1'b1;
-      fault_phase_o = axi_tmu_pkg_plt::PH_RDATA;
-      fault_type_o  = axi_tmu_pkg_plt::TMU_FLT_SLVERR;
+      fault_phase_o = axi_tmu_pkg::PH_PLT_RDATA;
+      fault_type_o  = axi_tmu_pkg::TMU_FLT_SLVERR;
     end else if (evt_ovf_o) begin
       abort_id_o    = evt_ovf_id_o;
       fault_pulse_o = 1'b1;
-      fault_phase_o = axi_tmu_pkg_plt::PH_AR;
-      fault_type_o  = axi_tmu_pkg_plt::TMU_FLT_OVERFLOW;
+      fault_phase_o = axi_tmu_pkg::PH_PLT_AR;
+      fault_type_o  = axi_tmu_pkg::TMU_FLT_OVERFLOW;
     end
   end
 

@@ -5,7 +5,7 @@
 // Chaoqun Liang <chaoqun.liang@unibo.it>
 
 module axi_tmu_top_plt
-  import axi_tmu_pkg_plt::*;
+  import axi_tmu_pkg::*;
 #(
   parameter int unsigned MaxUniqIds    = 16,
   parameter int unsigned MaxTxnsPerId  = 2,
@@ -97,7 +97,7 @@ module axi_tmu_top_plt
   sbr_rsp_t sbr_rsp_isolated;
   logic     cut;
 
-  tmu_id_remap_plt #(
+  tmu_id_remap #(
     .AxiSlvPortIdWidth    ( AxiIdWidth   ),
     .AxiSlvPortMaxUniqIds ( MaxUniqIds   ),
     .AxiMaxTxnsPerId      ( MaxTxnsPerId ),
@@ -143,7 +143,7 @@ module axi_tmu_top_plt
   // Prescaler
   logic prescaled_en;
 
-  timebase_plt #(
+  tmu_timebase #(
     .DivFactor(PrescalerDiv)
   ) i_prescaler (
     .clk_i,
@@ -160,7 +160,7 @@ module axi_tmu_top_plt
   int_id_t       wr_fab_b_id;
   logic          wr_fault_pulse;
   tmu_phase_t    wr_fault_phase;
-  axi_tmu_pkg_plt::tmu_fault_type_t wr_fault_type;
+  axi_tmu_pkg::tmu_fault_type_t wr_fault_type;
 
   logic          rd_timeout;
   int_id_t       rd_abort_id;
@@ -171,7 +171,7 @@ module axi_tmu_top_plt
   logic          rd_fab_r_last;
   logic          rd_fault_pulse;
   tmu_phase_t    rd_fault_phase;
-  axi_tmu_pkg_plt::tmu_fault_type_t rd_fault_type;
+  axi_tmu_pkg::tmu_fault_type_t rd_fault_type;
 
   logic          wr_fab_all_req, rd_fab_all_req;
 
@@ -283,7 +283,7 @@ module axi_tmu_top_plt
 
   logic                         fault_logged;
   tmu_dir_t                     fault_dir_latched;
-  axi_tmu_pkg_plt::tmu_fault_type_t fault_type_latched;
+  axi_tmu_pkg::tmu_fault_type_t fault_type_latched;
   int_id_t                      fault_id_latched;
   tmu_phase_t                   fault_phase_latched;
 
@@ -299,7 +299,7 @@ module axi_tmu_top_plt
       fault_dir_latched    <= TMU_DIR_NONE;
       fault_type_latched   <= TMU_FLT_NONE;
       fault_id_latched     <= '0;
-      fault_phase_latched  <= PH_NONE;
+      fault_phase_latched  <= PH_PLT_NONE;
     end else if (reset_clear_i) begin
       first_fault_occurred <= 1'b0;
       wr_timeout_latched   <= 1'b0;
@@ -311,7 +311,7 @@ module axi_tmu_top_plt
       fault_dir_latched    <= TMU_DIR_NONE;
       fault_type_latched   <= TMU_FLT_NONE;
       fault_id_latched     <= '0;
-      fault_phase_latched  <= PH_NONE;
+      fault_phase_latched  <= PH_PLT_NONE;
     end else if (!first_fault_occurred) begin
       if (wr_timeout || wr_reset_req || wr_fault_pulse) begin
         wr_timeout_latched   <= wr_timeout;
@@ -394,7 +394,7 @@ module axi_tmu_top_plt
   assign faultlog_we = (!fault_logged && (wr_fault_pulse || rd_fault_pulse)) ||
                        (wr_evt_ovf || rd_evt_ovf);
 
-  axi_tmu_pkg_plt::tmu_fault_log_t faultlog_d;
+  axi_tmu_pkg::tmu_fault_log_t faultlog_d;
 
   always_comb begin
     faultlog_d = '0;

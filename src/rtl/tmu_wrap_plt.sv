@@ -4,7 +4,7 @@
 
 // Chaoqun Liang <chaoqun.liang@unibo.it>
 
-import axi_tmu_pkg_plt::*;
+import axi_tmu_pkg::*;
 
 module tmu_wrap_plt (
   input  logic               clk_i,

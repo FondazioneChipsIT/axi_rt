@@ -74,7 +74,8 @@ package axi_tmu_pkg;
   } tmu_dir_t;
 
   // Phase code carried by the top, independent of the selected implementation.
-  // The guards use tmu_phase_ilt_t / tmu_phase_clt_t; PH_*_NONE must be 0 in both.
+  // The guards use tmu_phase_ilt_t / tmu_phase_clt_t / tmu_phase_plt_t;
+  // PH_*_NONE must be 0 in all.
   typedef logic [2:0] tmu_phase_t;
 
   //******* ILT IMPLEMENTATION VARIABLES *******//
@@ -89,7 +90,7 @@ package axi_tmu_pkg;
     PH_ILT_R    = 3'd4
   } tmu_phase_ilt_t;
 
-  //******* CLT IMPLEMENTATION VARIABLES *******//
+  //******* CLT/PLT IMPLEMENTATION VARIABLES *******//
 
   typedef enum logic [1:0] {
     WRITE_ADDRESS,
@@ -112,5 +113,29 @@ package axi_tmu_pkg;
     PH_CLT_AR    = 3'd4,
     PH_CLT_RDATA = 3'd5
   } tmu_phase_clt_t;
+
+  typedef enum logic [3:0] {
+    PH_PLT_NONE   = 4'd0,
+    // Write phases
+    PH_PLT_AW     = 4'd1,  // AWVALID->AWREADY
+    PH_PLT_WOWN   = 4'd2,  // Owner wait for first W
+    PH_PLT_WFIRST = 4'd3,  // WVALID(first)->WREADY(first)
+    PH_PLT_WDATA  = 4'd4,  // WFIRST->WLAST (burst window)
+    PH_PLT_W2B    = 4'd5,  // WLAST->BVALID (per-ID)
+    PH_PLT_B2BR   = 4'd6,  // BVALID->BREADY (per-ID)
+    // Read phases (re-use same enum space)
+    PH_PLT_AR     = 4'd7,  // ARVALID->ARREADY
+    PH_PLT_RHEAD  = 4'd8,  // ARHS->RFIRST (head waits)
+    PH_PLT_RV2RR  = 4'd9,  // RVALID(first)->RREADY
+    PH_PLT_RDATA  = 4'd10  // RFIRST->RLAST (head txn)
+  } tmu_phase_plt_t;
+
+  typedef struct packed {
+    logic             fvalid;
+    tmu_fault_type_t  ftype;
+    tmu_dir_t         fdir;
+    tmu_phase_plt_t   fphase;
+    logic [AxiIntIdWidth-1:0]  fid;  // large enough for IntIdWidth (pack/mask on write)
+  } tmu_fault_log_t;
 
 endpackage
