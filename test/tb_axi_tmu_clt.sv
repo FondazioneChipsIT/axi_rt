@@ -225,7 +225,7 @@ module tb_axi_tmu_clt;
 
   // ---------------------------------------------------------------------------
   // Implementation under test: the only part that differs between
-  // tb_axi_tmu_ilt and tb_axi_tmu_clt
+  // tb_axi_tmu_ilt, tb_axi_tmu_clt and tb_axi_tmu_plt
   // ---------------------------------------------------------------------------
   localparam tmu_mode_e   TbMode         = CLT_MODE;
   localparam logic [31:0] TbFaultLogAddr = 32'h0000_0014;

@@ -41,6 +41,10 @@ sources:
       - src/rtl/tmu_rd_inflight_clt.sv
       - src/rtl/write_guard_clt.sv
       - src/rtl/read_guard_clt.sv
+      - src/rtl/tmu_wr_inflight_plt.sv
+      - src/rtl/tmu_rd_inflight_plt.sv
+      - src/rtl/write_guard_plt.sv
+      - src/rtl/read_guard_plt.sv
       - src/rtl/axi_tmu_top.sv
   
   - target: tmu_synth
@@ -60,3 +64,4 @@ sources:
       - src/rtl/axi_tmu_pkg.sv
       - test/tb_axi_tmu_ilt.sv
       - test/tb_axi_tmu_clt.sv
+      - test/tb_axi_tmu_plt.sv

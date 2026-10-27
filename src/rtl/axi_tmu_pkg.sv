@@ -74,22 +74,24 @@ package axi_tmu_pkg;
   } tmu_dir_t;
 
   // Phase code carried by the top, independent of the selected implementation.
-  // The guards use tmu_phase_ilt_t / tmu_phase_clt_t; PH_*_NONE must be 0 in both.
-  typedef logic [2:0] tmu_phase_t;
+  // The guards use tmu_phase_ilt_t / tmu_phase_clt_t / tmu_phase_plt_t;
+  // PH_*_NONE must be 0 in all. They are 4 bits wide, like the phase field of the
+  // fault log register, as the PLT phases go up to 10.
+  typedef logic [3:0] tmu_phase_t;
 
   //******* ILT IMPLEMENTATION VARIABLES *******//
 
-  typedef enum logic [2:0] {
-    PH_ILT_NONE = 3'd0,
+  typedef enum logic [3:0] {
+    PH_ILT_NONE = 4'd0,
     // Write phases (ILT)
-    PH_ILT_AW   = 3'd1,
-    PH_ILT_B    = 3'd2,
+    PH_ILT_AW   = 4'd1,
+    PH_ILT_B    = 4'd2,
     // Read phases (ILT)
-    PH_ILT_AR   = 3'd3,
-    PH_ILT_R    = 3'd4
+    PH_ILT_AR   = 4'd3,
+    PH_ILT_R    = 4'd4
   } tmu_phase_ilt_t;
 
-  //******* CLT IMPLEMENTATION VARIABLES *******//
+  //******* CLT/PLT IMPLEMENTATION VARIABLES *******//
 
   typedef enum logic [1:0] {
     WRITE_ADDRESS,
@@ -102,15 +104,31 @@ package axi_tmu_pkg;
     READ_DATA
   } read_state_t;
 
-  typedef enum logic [2:0] {
-    PH_CLT_NONE  = 3'd0,
+  typedef enum logic [3:0] {
+    PH_CLT_NONE  = 4'd0,
     // Write channels (CLT)
-    PH_CLT_AW    = 3'd1,
-    PH_CLT_WDATA = 3'd2,
-    PH_CLT_BRSP  = 3'd3,
+    PH_CLT_AW    = 4'd1,
+    PH_CLT_WDATA = 4'd2,
+    PH_CLT_BRSP  = 4'd3,
     // Read channels (CLT)
-    PH_CLT_AR    = 3'd4,
-    PH_CLT_RDATA = 3'd5
+    PH_CLT_AR    = 4'd4,
+    PH_CLT_RDATA = 4'd5
   } tmu_phase_clt_t;
+
+  typedef enum logic [3:0] {
+    PH_PLT_NONE   = 4'd0,
+    // Write phases
+    PH_PLT_AW     = 4'd1,  // AWVALID->AWREADY
+    PH_PLT_WOWN   = 4'd2,  // Owner wait for first W
+    PH_PLT_WFIRST = 4'd3,  // WVALID(first)->WREADY(first)
+    PH_PLT_WDATA  = 4'd4,  // WFIRST->WLAST (burst window)
+    PH_PLT_W2B    = 4'd5,  // WLAST->BVALID (per-ID)
+    PH_PLT_B2BR   = 4'd6,  // BVALID->BREADY (per-ID)
+    // Read phases (re-use same enum space)
+    PH_PLT_AR     = 4'd7,  // ARVALID->ARREADY
+    PH_PLT_RHEAD  = 4'd8,  // ARHS->RFIRST (head waits)
+    PH_PLT_RV2RR  = 4'd9,  // RVALID(first)->RREADY
+    PH_PLT_RDATA  = 4'd10  // RFIRST->RLAST (head txn)
+  } tmu_phase_plt_t;
 
 endpackage
