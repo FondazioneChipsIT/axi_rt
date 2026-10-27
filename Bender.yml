@@ -65,3 +65,4 @@ sources:
       - src/rtl/axi_tmu_pkg.sv
       - test/tb_axi_tmu_ilt.sv
       - test/tb_axi_tmu_clt.sv
+      - test/tb_axi_tmu_plt.sv
