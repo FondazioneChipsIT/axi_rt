@@ -494,6 +494,101 @@ module axi_tmu_top
       .fault_phase_o        ( rd_fault_phase         ),
       .fault_type_o         ( rd_fault_type          )
     );
+  end else if (TmuMode == PLT_MODE) begin : gen_guards_plt
+    assign wr_fab_b_emit = wr_fab_b_valid;
+    // PLT accepts the requests of the manager during a cut and drains them
+    assign cut_req_ready = 1'b1;
+
+    write_guard_plt #(
+      .MaxUniqIds   ( MaxUniqIds   ),
+      .MaxWrTxns    ( MaxWrTxns    ),
+      .hs_cnt_t     ( hs_cnt_t     ),
+      .id_t         ( int_id_t     )
+    ) i_write_guard (
+      .clk_i,
+      .rst_ni,
+      .reset_clear_i        ( reset_clear_i          ),
+      .prescaled_en_i       ( prescaled_en           ),
+      .aw_hs_i              ( aw_hs                  ),
+      .aw_valid_i           ( mgr_req_mon.aw_valid   ),
+      .aw_ready_i           ( sbr_rsp_mon.aw_ready   ),
+      .w_hs_i               ( w_hs                   ),
+      .w_valid_i            ( mgr_req_mon.w_valid    ),
+      .w_ready_i            ( sbr_rsp_mon.w_ready    ),
+      .wlast_i              ( mgr_req_mon.w.last     ),
+      .b_hs_i               ( b_hs                   ),
+      .b_valid_i            ( sbr_rsp_mon.b_valid    ),
+      .b_ready_i            ( mgr_req_mon.b_ready    ),
+      .awid_i               ( mgr_req_mon.aw.id      ),
+      .awlen_i              ( mgr_req_mon.aw.len     ),
+      .bid_i                ( sbr_rsp_mon.b.id       ),
+      .bresp_i              ( sbr_rsp_mon.b.resp     ),
+      .budget_awvld_awrdy_i ( budget_avld_ardy       ),
+      .budget_owner_wvld_i  ( budget_awhs_wfirst     ),
+      .budget_wvld_wrdy_i   ( budget_wvld_wrdy       ),
+      .budget_inter_beat_i  ( budget_w_liveness      ),
+      .budget_wlast_bvld_i  ( budget_wlast_bvld      ),
+      .budget_bvld_brdy_i   ( budget_bvld_brdy       ),
+      .abort_id_o           ( wr_abort_id            ),
+      .reset_req_o          ( wr_reset_req           ),
+      .timeout_o            ( wr_timeout             ),
+      .evt_ovf_o            ( wr_evt_ovf             ),
+      .evt_ovf_id_o         ( wr_evt_ovf_id          ),
+      .fab_all_req_i        ( wr_fab_all_req         ),
+      .fab_b_valid_o        ( wr_fab_b_valid         ),
+      .fab_b_id_o           ( wr_fab_b_id            ),
+      .lat_awvld_wfirst_o   ( lat_awvld_wfirst       ),
+      .lat_wvld_wrdy_o      ( lat_wvld_wrdy          ),
+      .lat_wvld_wlast_o     ( lat_wvld_wlast         ),
+      .lat_wlast_bvld_o     ( lat_wlast_bvld         ),
+      .lat_bvld_brdy_o      ( lat_bvld_brdy          ),
+      .fault_pulse_o        ( wr_fault_pulse         ),
+      .fault_phase_o        ( wr_fault_phase         ),
+      .fault_type_o         ( wr_fault_type          )
+    );
+
+    read_guard_plt #(
+      .MaxUniqIds   ( MaxUniqIds   ),
+      .MaxRdTxns    ( MaxRdTxns    ),
+      .hs_cnt_t     ( hs_cnt_t     ),
+      .id_t         ( int_id_t     )
+    ) i_read_guard (
+      .clk_i,
+      .rst_ni,
+      .prescaled_en_i       ( prescaled_en           ),
+      .ar_hs_i              ( ar_hs                  ),
+      .ar_valid_i           ( mgr_req_mon.ar_valid   ),
+      .ar_ready_i           ( sbr_rsp_mon.ar_ready   ),
+      .arid_i               ( mgr_req_mon.ar.id      ),
+      .arlen_i              ( mgr_req_mon.ar.len     ),
+      .r_hs_i               ( r_hs                   ),
+      .r_valid_i            ( sbr_rsp_mon.r_valid    ),
+      .r_ready_i            ( mgr_req_mon.r_ready    ),
+      .r_id_i               ( sbr_rsp_mon.r.id       ),
+      .rlast_i              ( sbr_rsp_mon.r.last     ),
+      .rresp_i              ( sbr_rsp_mon.r.resp     ),
+      .budget_arvld_arrdy_i ( budget_arvld_arrdy     ),
+      .budget_arhs_rfirst_i ( budget_arhs_rfirst     ),
+      .budget_rvld_rrdy_i   ( budget_rvld_rrdy       ),
+      .budget_r_liveness_i  ( budget_r_liveness      ),
+      .reset_clear_i        ( reset_clear_i          ),
+      .reset_req_o          ( rd_reset_req           ),
+      .timeout_o            ( rd_timeout             ),
+      .evt_ovf_o            ( rd_evt_ovf             ),
+      .evt_ovf_id_o         ( rd_evt_ovf_id          ),
+      .abort_id_o           ( rd_abort_id            ),
+      .fab_all_req_i        ( rd_fab_all_req         ),
+      .fab_r_valid_o        ( rd_fab_r_valid         ),
+      .fab_r_id_o           ( rd_fab_r_id            ),
+      .fab_r_last_o         ( rd_fab_r_last          ),
+      .lat_arvld_arrdy_o    ( lat_arvld_arrdy        ),
+      .lat_arvld_rvld_o     ( lat_arvld_rvld         ),
+      .lat_rvld_rrdy_o      ( lat_rvld_rrdy          ),
+      .lat_rvld_rlast_o     ( lat_rvld_rlast         ),
+      .fault_pulse_o        ( rd_fault_pulse         ),
+      .fault_phase_o        ( rd_fault_phase         ),
+      .fault_type_o         ( rd_fault_type          )
+    );
   end
 
   logic first_fault_occurred;
