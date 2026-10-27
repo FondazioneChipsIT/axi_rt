@@ -394,7 +394,16 @@ module axi_tmu_top_plt
   assign faultlog_we = (!fault_logged && (wr_fault_pulse || rd_fault_pulse)) ||
                        (wr_evt_ovf || rd_evt_ovf);
 
-  axi_tmu_pkg::tmu_fault_log_t faultlog_d;
+  // Fault captured at the first fault; widths follow the parameters of the top
+  typedef struct packed {
+    logic            fvalid;
+    tmu_fault_type_t ftype;
+    tmu_dir_t        fdir;
+    tmu_phase_t      fphase;
+    int_id_t         fid;
+  } fault_log_t;
+
+  fault_log_t faultlog_d;
 
   always_comb begin
     faultlog_d = '0;

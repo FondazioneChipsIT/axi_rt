@@ -130,12 +130,4 @@ package axi_tmu_pkg;
     PH_PLT_RDATA  = 4'd10  // RFIRST->RLAST (head txn)
   } tmu_phase_plt_t;
 
-  typedef struct packed {
-    logic             fvalid;
-    tmu_fault_type_t  ftype;
-    tmu_dir_t         fdir;
-    tmu_phase_plt_t   fphase;
-    logic [AxiIntIdWidth-1:0]  fid;  // large enough for IntIdWidth (pack/mask on write)
-  } tmu_fault_log_t;
-
 endpackage
