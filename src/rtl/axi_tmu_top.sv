@@ -63,8 +63,15 @@ module axi_tmu_top
   hs_cnt_t     budget_avld_ardy, budget_w_liveness, budget_r_liveness, budget_b;
   track_cnt_t  budget_b2b;
   logic [11:0] budget_r2r;
+  // PLT only
+  hs_cnt_t     budget_arvld_arrdy, budget_awhs_wfirst, budget_wvld_wrdy, budget_wlast_bvld;
+  hs_cnt_t     budget_bvld_brdy, budget_rvld_rrdy, budget_arhs_rfirst;
 
-  // Fault log write path towards the register block (same for both modes)
+  // Latency high-watermarks towards the register block (PLT only, tied to 0 otherwise)
+  logic [9:0]  lat_awvld_wfirst, lat_wvld_wrdy, lat_wvld_wlast, lat_wlast_bvld, lat_bvld_brdy;
+  logic [9:0]  lat_arvld_arrdy, lat_arvld_rvld, lat_rvld_rrdy, lat_rvld_rlast;
+
+  // Fault log write path towards the register block (same for all modes)
   logic        faultlog_we;
   logic        faultlog_valid_d, faultlog_dir_d, reset_d;
   logic [2:0]  faultlog_type_d;
@@ -95,6 +102,14 @@ module axi_tmu_top
     assign budget_w_liveness = '0;
     assign budget_r_liveness = '0;
     assign budget_b          = '0;
+
+    assign budget_arvld_arrdy = '0;
+    assign budget_awhs_wfirst = '0;
+    assign budget_wvld_wrdy   = '0;
+    assign budget_wlast_bvld  = '0;
+    assign budget_bvld_brdy   = '0;
+    assign budget_rvld_rrdy   = '0;
+    assign budget_arhs_rfirst = '0;
 
     assign hw2reg.fault_log.fault_valid.de = faultlog_we;
     assign hw2reg.fault_log.fault_type.de  = faultlog_we;
@@ -133,6 +148,14 @@ module axi_tmu_top
     assign budget_b2b        = '0;
     assign budget_r2r        = '0;
 
+    assign budget_arvld_arrdy = '0;
+    assign budget_awhs_wfirst = '0;
+    assign budget_wvld_wrdy   = '0;
+    assign budget_wlast_bvld  = '0;
+    assign budget_bvld_brdy   = '0;
+    assign budget_rvld_rrdy   = '0;
+    assign budget_arhs_rfirst = '0;
+
     assign hw2reg.fault_log.fault_valid.de = faultlog_we;
     assign hw2reg.fault_log.fault_type.de  = faultlog_we;
     assign hw2reg.fault_log.fault_dir.de   = faultlog_we;
@@ -146,8 +169,72 @@ module axi_tmu_top
     assign hw2reg.fault_log.fault_id.d     = faultlog_id_d;
     assign hw2reg.fault_log.fault_phase.d  = faultlog_phase_d;
     assign hw2reg.reset.d                  = reset_d;
+  end else if (TmuMode == PLT_MODE) begin : gen_regs_plt
+    axi_tmu_plt_reg_pkg::axi_tmu_plt_reg2hw_t reg2hw;
+    axi_tmu_plt_reg_pkg::axi_tmu_plt_hw2reg_t hw2reg;
+
+    axi_tmu_plt_reg_top #(
+      .reg_req_t(cfg_req_t),
+      .reg_rsp_t(cfg_rsp_t)
+    ) i_regs (
+      .clk_i,
+      .rst_ni,
+      .reg_req_i ( cfg_req_i ),
+      .reg_rsp_o ( cfg_rsp_o ),
+      .reg2hw    ( reg2hw    ),
+      .hw2reg    ( hw2reg    ),
+      .devmode_i ( 1'b1      )
+    );
+
+    assign budget_avld_ardy   = (reg2hw.budget_awvld_awrdy.q == '0) ? '1 : hs_cnt_t'(reg2hw.budget_awvld_awrdy.q);
+    assign budget_arvld_arrdy = (reg2hw.budget_arvld_arrdy.q == '0) ? '1 : hs_cnt_t'(reg2hw.budget_arvld_arrdy.q);
+    assign budget_awhs_wfirst = (reg2hw.budget_awhs_wfirst.q == '0) ? '1 : hs_cnt_t'(reg2hw.budget_awhs_wfirst.q);
+    assign budget_wvld_wrdy   = (reg2hw.budget_wvld_wrdy.q   == '0) ? '1 : hs_cnt_t'(reg2hw.budget_wvld_wrdy.q);
+    assign budget_w_liveness  = (reg2hw.budget_w_liveness.q  == '0) ? '1 : hs_cnt_t'(reg2hw.budget_w_liveness.q);
+    assign budget_wlast_bvld  = (reg2hw.budget_wlast_bvld.q  == '0) ? '1 : hs_cnt_t'(reg2hw.budget_wlast_bvld.q);
+    assign budget_bvld_brdy   = (reg2hw.budget_bvld_brdy.q   == '0) ? '1 : hs_cnt_t'(reg2hw.budget_bvld_brdy.q);
+    assign budget_rvld_rrdy   = (reg2hw.budget_rvld_rrdy.q   == '0) ? '1 : hs_cnt_t'(reg2hw.budget_rvld_rrdy.q);
+    assign budget_arhs_rfirst = (reg2hw.budget_arhs_rfirst.q == '0) ? '1 : hs_cnt_t'(reg2hw.budget_arhs_rfirst.q);
+    assign budget_r_liveness  = (reg2hw.budget_r_liveness.q  == '0) ? '1 : hs_cnt_t'(reg2hw.budget_r_liveness.q);
+    assign budget_b           = '0;
+    assign budget_b2b         = '0;
+    assign budget_r2r         = '0;
+
+    assign hw2reg.fault_log.fault_valid.de = faultlog_we;
+    assign hw2reg.fault_log.fault_type.de  = faultlog_we;
+    assign hw2reg.fault_log.fault_dir.de   = faultlog_we;
+    assign hw2reg.fault_log.fault_id.de    = faultlog_we;
+    assign hw2reg.fault_log.fault_phase.de = faultlog_we;
+    assign hw2reg.reset.de                 = faultlog_we;
+
+    assign hw2reg.fault_log.fault_valid.d  = faultlog_valid_d;
+    assign hw2reg.fault_log.fault_type.d   = faultlog_type_d;
+    assign hw2reg.fault_log.fault_dir.d    = faultlog_dir_d;
+    assign hw2reg.fault_log.fault_id.d     = faultlog_id_d;
+    assign hw2reg.fault_log.fault_phase.d  = faultlog_phase_d;
+    assign hw2reg.reset.d                  = reset_d;
+
+    // Latency high-watermarks, written every cycle
+    assign hw2reg.latency_awvld_wfirst.de = 1'b1;
+    assign hw2reg.latency_awvld_wfirst.d  = lat_awvld_wfirst;
+    assign hw2reg.latency_wvld_wrdy.de    = 1'b1;
+    assign hw2reg.latency_wvld_wrdy.d     = lat_wvld_wrdy;
+    assign hw2reg.latency_wvld_wlast.de   = 1'b1;
+    assign hw2reg.latency_wvld_wlast.d    = lat_wvld_wlast;
+    assign hw2reg.latency_wlast_bvld.de   = 1'b1;
+    assign hw2reg.latency_wlast_bvld.d    = lat_wlast_bvld;
+    assign hw2reg.latency_bvld_brdy.de    = 1'b1;
+    assign hw2reg.latency_bvld_brdy.d     = lat_bvld_brdy;
+    assign hw2reg.latency_arvld_arrdy.de  = 1'b1;
+    assign hw2reg.latency_arvld_arrdy.d   = lat_arvld_arrdy;
+    assign hw2reg.latency_arvld_rvld.de   = 1'b1;
+    assign hw2reg.latency_arvld_rvld.d    = lat_arvld_rvld;
+    assign hw2reg.latency_rvld_rrdy.de    = 1'b1;
+    assign hw2reg.latency_rvld_rrdy.d     = lat_rvld_rrdy;
+    assign hw2reg.latency_rvld_rlast.de   = 1'b1;
+    assign hw2reg.latency_rvld_rlast.d    = lat_rvld_rlast;
   end else begin : gen_regs_invalid
-    $fatal(1, "axi_tmu_top: only ILT_MODE and CLT_MODE are implemented");
+    $fatal(1, "axi_tmu_top: unsupported TmuMode");
   end
 
   sbr_req_t remap_req;
@@ -248,6 +335,10 @@ module axi_tmu_top
     // ILT keeps the manager stalled during a cut
     assign cut_req_ready = 1'b0;
 
+    // No latency registers in this mode
+    assign {lat_awvld_wfirst, lat_wvld_wrdy, lat_wvld_wlast, lat_wlast_bvld, lat_bvld_brdy,
+            lat_arvld_arrdy, lat_arvld_rvld, lat_rvld_rrdy, lat_rvld_rlast} = '0;
+
     write_guard_ilt #(
       .MaxUniqIds   ( MaxUniqIds   ),
       .MaxTxnsPerId ( MaxTxnsPerId ),
@@ -322,6 +413,10 @@ module axi_tmu_top
     assign wr_fab_b_emit = wr_fab_b_valid;
     // CLT accepts the requests of the manager during a cut and drains them
     assign cut_req_ready = 1'b1;
+
+    // No latency registers in this mode
+    assign {lat_awvld_wfirst, lat_wvld_wrdy, lat_wvld_wlast, lat_wlast_bvld, lat_bvld_brdy,
+            lat_arvld_arrdy, lat_arvld_rvld, lat_rvld_rrdy, lat_rvld_rlast} = '0;
 
     write_guard_clt #(
       .MaxUniqIds   ( MaxUniqIds   ),
