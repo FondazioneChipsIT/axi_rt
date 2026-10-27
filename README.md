@@ -195,9 +195,8 @@ points to keep in mind until then:
   summary. The errors include the `$fatal` of the testbench and the assertions of
   the AXI library and of the design, which do not change the testbench verdict.
   The make output only tells that the run failed: the reason is in
-  `build/vsim/<TBENCH>/transcript`. A passing run ends with `[TB] ILT_MODE PASSED`
-  or `[TB] CLT_MODE PASSED` and `# Errors: 0` (`tb_axi_tmu_plt` is the original
-  testbench of the PLT, not aligned yet, and prints no such verdict).
+  `build/vsim/<TBENCH>/transcript`. A passing run ends with `[TB] ILT_MODE PASSED`,
+  `[TB] CLT_MODE PASSED` or `[TB] PLT_MODE PASSED` and `# Errors: 0`.
 
 ## Troubleshooting
 
