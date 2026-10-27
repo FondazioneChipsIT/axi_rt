@@ -75,19 +75,20 @@ package axi_tmu_pkg;
 
   // Phase code carried by the top, independent of the selected implementation.
   // The guards use tmu_phase_ilt_t / tmu_phase_clt_t / tmu_phase_plt_t;
-  // PH_*_NONE must be 0 in all.
-  typedef logic [2:0] tmu_phase_t;
+  // PH_*_NONE must be 0 in all. They are 4 bits wide, like the phase field of the
+  // fault log register, as the PLT phases go up to 10.
+  typedef logic [3:0] tmu_phase_t;
 
   //******* ILT IMPLEMENTATION VARIABLES *******//
 
-  typedef enum logic [2:0] {
-    PH_ILT_NONE = 3'd0,
+  typedef enum logic [3:0] {
+    PH_ILT_NONE = 4'd0,
     // Write phases (ILT)
-    PH_ILT_AW   = 3'd1,
-    PH_ILT_B    = 3'd2,
+    PH_ILT_AW   = 4'd1,
+    PH_ILT_B    = 4'd2,
     // Read phases (ILT)
-    PH_ILT_AR   = 3'd3,
-    PH_ILT_R    = 3'd4
+    PH_ILT_AR   = 4'd3,
+    PH_ILT_R    = 4'd4
   } tmu_phase_ilt_t;
 
   //******* CLT/PLT IMPLEMENTATION VARIABLES *******//
@@ -103,15 +104,15 @@ package axi_tmu_pkg;
     READ_DATA
   } read_state_t;
 
-  typedef enum logic [2:0] {
-    PH_CLT_NONE  = 3'd0,
+  typedef enum logic [3:0] {
+    PH_CLT_NONE  = 4'd0,
     // Write channels (CLT)
-    PH_CLT_AW    = 3'd1,
-    PH_CLT_WDATA = 3'd2,
-    PH_CLT_BRSP  = 3'd3,
+    PH_CLT_AW    = 4'd1,
+    PH_CLT_WDATA = 4'd2,
+    PH_CLT_BRSP  = 4'd3,
     // Read channels (CLT)
-    PH_CLT_AR    = 3'd4,
-    PH_CLT_RDATA = 3'd5
+    PH_CLT_AR    = 4'd4,
+    PH_CLT_RDATA = 4'd5
   } tmu_phase_clt_t;
 
   typedef enum logic [3:0] {
